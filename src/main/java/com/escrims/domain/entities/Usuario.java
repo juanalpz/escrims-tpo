@@ -1,4 +1,4 @@
-package com.escrims.domain.model;
+package com.escrims.domain.entities;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -10,9 +10,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Jugador de la plataforma. Por ahora solo contiene los datos que necesita el
- * emparejamiento; el resto del perfil (email, passwordHash, rol de sistema...)
- * se agrega con el módulo de usuarios.
+ * Jugador de la plataforma. Contiene los datos de perfil, matchmaking,
+ * historial de fair play y sanciones.
  */
 public class Usuario {
 
@@ -20,7 +19,8 @@ public class Usuario {
     public static final double RATING_MAXIMO = 5.0;
 
     private final UUID id;
-    private final String username;
+    private String username;
+    private boolean emailVerificado;
     private int mmr;
     private int latenciaPromedio;
     private Region region;
@@ -30,6 +30,9 @@ public class Usuario {
     private int abandonos;
     private double ratingFairPlay = RATING_MAXIMO;
 
+    /**
+     * Constructor completo para matchmaking y uso general.
+     */
     public Usuario(String username, int mmr, int latenciaPromedio, Region region) {
         this.id = UUID.randomUUID();
         this.username = Objects.requireNonNull(username, "username");
@@ -38,6 +41,17 @@ public class Usuario {
         this.region = region;
     }
 
+    /**
+     * Constructor mínimo para tests del Builder y creación rápida.
+     * Genera un username basado en el UUID.
+     */
+    public Usuario() {
+        this.id = UUID.randomUUID();
+        this.username = "usuario-" + id.toString().substring(0, 8);
+    }
+
+    // ── Identidad ──────────────────────────────────────────────
+
     public UUID getId() {
         return id;
     }
@@ -45,6 +59,44 @@ public class Usuario {
     public String getUsername() {
         return username;
     }
+
+    // ── Verificación de email (RN-01) ──────────────────────────
+
+    public boolean isEmailVerificado() {
+        return emailVerificado;
+    }
+
+    public void setEmailVerificado(boolean emailVerificado) {
+        this.emailVerificado = emailVerificado;
+    }
+
+    // ── Sanciones y cooldowns (RN-06) ──────────────────────────
+
+    /**
+     * Verifica si el usuario tiene alguna sanción con cooldown vigente
+     * en este momento. Delegación a {@link #tieneSancionActiva(LocalDateTime)}.
+     */
+    public boolean tieneCooldownActivo() {
+        return tieneSancionActiva(LocalDateTime.now());
+    }
+
+    public boolean tieneSancionActiva(LocalDateTime momento) {
+        return sanciones.stream().anyMatch(s -> s.estaActiva(momento));
+    }
+
+    public List<Sancion> getSanciones() {
+        return Collections.unmodifiableList(sanciones);
+    }
+
+    public void agregarSancion(Sancion sancion) {
+        sanciones.add(Objects.requireNonNull(sancion, "sancion"));
+    }
+
+    public int getStrikes() {
+        return sanciones.stream().mapToInt(Sancion::getStrikes).sum();
+    }
+
+    // ── MMR y matchmaking ──────────────────────────────────────
 
     public int getMmr() {
         return mmr;
@@ -79,21 +131,7 @@ public class Usuario {
         rolesPreferidos.add(rol);
     }
 
-    public List<Sancion> getSanciones() {
-        return Collections.unmodifiableList(sanciones);
-    }
-
-    public void agregarSancion(Sancion sancion) {
-        sanciones.add(sancion);
-    }
-
-    public int getStrikes() {
-        return sanciones.stream().mapToInt(Sancion::getStrikes).sum();
-    }
-
-    public boolean tieneSancionActiva(LocalDateTime momento) {
-        return sanciones.stream().anyMatch(s -> s.estaActiva(momento));
-    }
+    // ── Historial y fair play ──────────────────────────────────
 
     public int getScrimsJugados() {
         return scrimsJugados;
@@ -103,7 +141,7 @@ public class Usuario {
         return abandonos;
     }
 
-    /** Registra el historial de participación: scrims jugados y cuántos abandonó (o no-show). */
+    /** Registra el historial de participación. */
     public void registrarHistorial(int scrimsJugados, int abandonos) {
         if (scrimsJugados < 0 || abandonos < 0 || abandonos > scrimsJugados) {
             throw new IllegalArgumentException("Historial inválido");
@@ -112,12 +150,12 @@ public class Usuario {
         this.abandonos = abandonos;
     }
 
-    /** Proporción de scrims abandonados, entre 0 y 1. Un jugador sin historial tiene 0. */
+    /** Proporción de scrims abandonados, entre 0 y 1. Sin historial devuelve 0. */
     public double getTasaAbandono() {
         return scrimsJugados == 0 ? 0.0 : (double) abandonos / scrimsJugados;
     }
 
-    /** Promedio de las puntuaciones de fair play recibidas, entre 0 y {@link #RATING_MAXIMO}. */
+    /** Rating de fair play, entre 0 y {@link #RATING_MAXIMO}. */
     public double getRatingFairPlay() {
         return ratingFairPlay;
     }
@@ -128,6 +166,8 @@ public class Usuario {
         }
         this.ratingFairPlay = ratingFairPlay;
     }
+
+    // ── equals / hashCode / toString ───────────────────────────
 
     @Override
     public boolean equals(Object o) {

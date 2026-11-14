@@ -1,7 +1,7 @@
-package com.escrims.domain.matchmaking;
+package com.escrims.domain.strategy;
 
-import com.escrims.domain.model.Scrim;
-import com.escrims.domain.model.Usuario;
+import com.escrims.domain.entities.Scrim;
+import com.escrims.domain.entities.Usuario;
 
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -57,8 +57,9 @@ public class ByLatencyStrategy implements MatchmakingStrategy {
 
     /** El umbral efectivo: el del scrim (si define uno) nunca se relaja. */
     private int umbral(Scrim scrim) {
-        return scrim.getLatenciaMaxima() > 0
-                ? Math.min(latenciaMaxima, scrim.getLatenciaMaxima())
+        Integer scrimLat = scrim.getLatenciaMax();
+        return (scrimLat != null && scrimLat > 0)
+                ? Math.min(latenciaMaxima, scrimLat)
                 : latenciaMaxima;
     }
 

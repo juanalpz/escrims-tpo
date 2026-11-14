@@ -1,10 +1,11 @@
-package com.escrims.domain.matchmaking;
+package com.escrims.domain.strategy;
 
-import com.escrims.domain.model.Formato;
-import com.escrims.domain.model.Juego;
-import com.escrims.domain.model.Region;
-import com.escrims.domain.model.Scrim;
-import com.escrims.domain.model.Usuario;
+import com.escrims.domain.entities.Formato;
+import com.escrims.domain.entities.Juego;
+import com.escrims.domain.entities.Region;
+import com.escrims.domain.entities.Scrim;
+import com.escrims.domain.entities.Usuario;
+import com.escrims.domain.strategy.ByLatencyStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -18,16 +19,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ByLatencyStrategyTest {
 
-    private static final Region LAS = new Region("LAS", "Buenos Aires");
-    private static final Region NA = new Region("NA", "Virginia");
-    private static final Juego CS2 = new Juego("CS2");
+    private static final Region LAS = Region.LAS;
+    private static final Region NA = Region.NA;
+    private static final Juego CS2 = Juego.CS2;
 
     private static Usuario jugador(String nombre, int ping, Region region) {
         return new Usuario(nombre, 1500, ping, region);
     }
 
     private static Scrim scrim(Formato formato, int latenciaMaxima) {
-        return new Scrim(CS2, formato, LAS, null, latenciaMaxima);
+        return new Scrim(CS2, formato, LAS, null, null, latenciaMaxima);
     }
 
     @Test

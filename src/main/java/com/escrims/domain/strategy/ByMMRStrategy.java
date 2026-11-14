@@ -1,7 +1,7 @@
-package com.escrims.domain.matchmaking;
+package com.escrims.domain.strategy;
 
-import com.escrims.domain.model.Scrim;
-import com.escrims.domain.model.Usuario;
+import com.escrims.domain.entities.Scrim;
+import com.escrims.domain.entities.Usuario;
 
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -40,7 +40,7 @@ public class ByMMRStrategy implements MatchmakingStrategy {
 
     @Override
     public boolean esElegible(Scrim scrim, Usuario candidato) {
-        if (scrim.getRango() != null && !scrim.getRango().contiene(candidato.getMmr())) {
+        if (!scrim.mmrDentroDeRango(candidato.getMmr())) {
             return false;
         }
         OptionalDouble promedio = mmrPromedioDelLobby(scrim);

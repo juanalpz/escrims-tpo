@@ -1,8 +1,8 @@
-package com.escrims.domain.matchmaking;
+package com.escrims.domain.strategy;
 
-import com.escrims.domain.model.RolJuego;
-import com.escrims.domain.model.Scrim;
-import com.escrims.domain.model.Usuario;
+import com.escrims.domain.entities.RolJuego;
+import com.escrims.domain.entities.Scrim;
+import com.escrims.domain.entities.Usuario;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -18,14 +18,14 @@ import java.util.Set;
  * «ConcreteStrategy» Empareja por historial/compatibilidad.
  *
  * <p>Calcula un puntaje entre 0 y 1 por candidato:
- * {@code pesoCompatibilidad * sinergia + (1 - pesoCompatibilidad) * fairPlay}.
+ * {@code pesoCompatibilidad × sinergia + (1 − pesoCompatibilidad) × fairPlay}.
  *
  * <ul>
  *   <li><b>Sinergia de roles</b>: 1 si el candidato juega alguno de los roles que
  *       el scrim busca (o si el scrim no exige roles), 0.5 si no declaró roles,
  *       0 si ninguno de sus roles sirve.</li>
  *   <li><b>Fair play</b>: promedio entre la reputación (rating de feedback) y la
- *       constancia (1 - tasa de abandono), menos una penalidad por cada strike.</li>
+ *       constancia (1 − tasa de abandono), menos una penalidad por cada strike.</li>
  * </ul>
  *
  * <p>Quedan afuera los candidatos con una sanción en cooldown, con una tasa de
@@ -42,7 +42,7 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
     private final double pesoCompatibilidad;
     private final Clock reloj;
 
-    /** @param pesoCompatibilidad peso de la sinergia de roles, entre 0 y 1; el resto es fair play */
+    /** @param pesoCompatibilidad peso de la sinergia de roles, entre 0 y 1 */
     public ByHistoryStrategy(double pesoCompatibilidad) {
         this(pesoCompatibilidad, Clock.systemDefaultZone());
     }
@@ -113,7 +113,7 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
                 + (1 - pesoCompatibilidad) * calcularFairPlay(candidato);
     }
 
-    double calcularSinergia(Scrim scrim, Usuario candidato) {
+    public double calcularSinergia(Scrim scrim, Usuario candidato) {
         Set<RolJuego> buscados = scrim.getRolesBuscados();
         if (buscados.isEmpty()) {
             return 1.0;
@@ -125,7 +125,7 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
         return Collections.disjoint(buscados, preferidos) ? 0.0 : 1.0;
     }
 
-    double calcularFairPlay(Usuario candidato) {
+    public double calcularFairPlay(Usuario candidato) {
         double reputacion = candidato.getRatingFairPlay() / Usuario.RATING_MAXIMO;
         double constancia = 1 - candidato.getTasaAbandono();
         double base = (reputacion + constancia) / 2;

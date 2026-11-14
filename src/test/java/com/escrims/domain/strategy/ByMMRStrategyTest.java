@@ -1,11 +1,12 @@
-package com.escrims.domain.matchmaking;
+package com.escrims.domain.strategy;
 
-import com.escrims.domain.model.Formato;
-import com.escrims.domain.model.Juego;
-import com.escrims.domain.model.Rango;
-import com.escrims.domain.model.Region;
-import com.escrims.domain.model.Scrim;
-import com.escrims.domain.model.Usuario;
+import com.escrims.domain.entities.Formato;
+import com.escrims.domain.entities.Juego;
+import com.escrims.domain.entities.Rango;
+import com.escrims.domain.entities.Region;
+import com.escrims.domain.entities.Scrim;
+import com.escrims.domain.entities.Usuario;
+import com.escrims.domain.strategy.ByMMRStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -23,23 +24,22 @@ import static java.time.Duration.ofSeconds;
 
 class ByMMRStrategyTest {
 
-    private static final Region LAS = new Region("LAS", "Buenos Aires");
-    private static final Juego VALORANT = new Juego("Valorant");
-    /** Gold–Plat. */
-    private static final Rango GOLD_PLAT = new Rango(1200, 1800);
+    private static final Region LAS = Region.LAS;
+    private static final Juego VALORANT = Juego.VALORANT;
 
     private static Usuario jugador(String nombre, int mmr) {
         return new Usuario(nombre, mmr, 40, LAS);
     }
 
-    private static Scrim scrim(Formato formato, Rango rango) {
-        return new Scrim(VALORANT, formato, LAS, rango, 0);
+    private static Scrim scrim(Formato formato, Rango min, Rango max) {
+        return new Scrim(VALORANT, formato, LAS, min, max, 0);
     }
 
     @Test
     void rechazaAlCandidatoFueraDelRangoDelScrim() {
         ByMMRStrategy estrategia = new ByMMRStrategy(300);
-        Scrim scrim = scrim(Formato.CINCO_VS_CINCO, GOLD_PLAT);
+        // Gold–Plat: ORO (1200..1499) a PLATINO (1500..1800) -> 1200 a 1800
+        Scrim scrim = scrim(Formato.CINCO_VS_CINCO, Rango.ORO, Rango.PLATINO);
 
         assertFalse(estrategia.esElegible(scrim, jugador("silver", 1000)));
         assertFalse(estrategia.esElegible(scrim, jugador("diamante", 1801)));
@@ -50,7 +50,7 @@ class ByMMRStrategyTest {
     @Test
     void sinRangoAdmiteCualquierNivel() {
         ByMMRStrategy estrategia = new ByMMRStrategy(100);
-        Scrim scrim = scrim(Formato.CINCO_VS_CINCO, null);
+        Scrim scrim = scrim(Formato.CINCO_VS_CINCO, null, null);
 
         assertTrue(estrategia.esElegible(scrim, jugador("hierro", 50)));
         assertTrue(estrategia.esElegible(scrim, jugador("radiante", 3000)));
@@ -59,7 +59,7 @@ class ByMMRStrategyTest {
     @Test
     void conLobbyArmadoExigeEstarDentroDeLaToleranciaDelPromedio() {
         ByMMRStrategy estrategia = new ByMMRStrategy(100);
-        Scrim scrim = scrim(Formato.CINCO_VS_CINCO, GOLD_PLAT);
+        Scrim scrim = scrim(Formato.CINCO_VS_CINCO, Rango.ORO, Rango.PLATINO);
         scrim.agregarJugador(jugador("a", 1400));
         scrim.agregarJugador(jugador("b", 1600)); // promedio 1500
 
@@ -72,7 +72,7 @@ class ByMMRStrategyTest {
     @Test
     void conLobbyArmadoSeleccionaALosMasCercanosAlPromedio() {
         ByMMRStrategy estrategia = new ByMMRStrategy(200);
-        Scrim scrim = scrim(Formato.TRES_VS_TRES, GOLD_PLAT);
+        Scrim scrim = scrim(Formato.TRES_VS_TRES, Rango.ORO, Rango.PLATINO);
         for (int i = 0; i < 4; i++) {
             scrim.agregarJugador(jugador("lobby" + i, 1500));
         }
@@ -89,7 +89,7 @@ class ByMMRStrategyTest {
     @Test
     void conLobbyVacioEligeElGrupoMasParejo() {
         ByMMRStrategy estrategia = new ByMMRStrategy(100);
-        Scrim scrim = scrim(Formato.UNO_VS_UNO, null);
+        Scrim scrim = scrim(Formato.UNO_VS_UNO, null, null);
         Usuario a = jugador("a", 1000);
         Usuario b = jugador("b", 1090);
         Usuario c = jugador("c", 1500);
@@ -103,7 +103,7 @@ class ByMMRStrategyTest {
     @Test
     void conLobbyVacioNoJuntaJugadoresQueSuperanLaDiferenciaMaxima() {
         ByMMRStrategy estrategia = new ByMMRStrategy(100);
-        Scrim scrim = scrim(Formato.TRES_VS_TRES, null);
+        Scrim scrim = scrim(Formato.TRES_VS_TRES, null, null);
         Usuario a = jugador("a", 1000);
         Usuario b = jugador("b", 1050);
         Usuario c = jugador("c", 1100);
@@ -118,7 +118,7 @@ class ByMMRStrategyTest {
     @Test
     void noSeleccionaMasQueLosCuposDisponiblesNiAQuienesYaEstanEnElLobby() {
         ByMMRStrategy estrategia = new ByMMRStrategy(500);
-        Scrim scrim = scrim(Formato.UNO_VS_UNO, null);
+        Scrim scrim = scrim(Formato.UNO_VS_UNO, null, null);
         Usuario yaAdentro = jugador("yaAdentro", 1500);
         scrim.agregarJugador(yaAdentro);
 
@@ -132,7 +132,7 @@ class ByMMRStrategyTest {
     @Test
     void conLobbyCompletoNoSeleccionaANadie() {
         ByMMRStrategy estrategia = new ByMMRStrategy(500);
-        Scrim scrim = scrim(Formato.UNO_VS_UNO, null);
+        Scrim scrim = scrim(Formato.UNO_VS_UNO, null, null);
         scrim.agregarJugador(jugador("a", 1500));
         scrim.agregarJugador(jugador("b", 1500));
 
@@ -147,11 +147,12 @@ class ByMMRStrategyTest {
     @Test
     void empareja500CandidatosEnMenosDeDosSegundos() {
         ByMMRStrategy estrategia = new ByMMRStrategy(150);
-        Scrim scrim = scrim(Formato.CINCO_VS_CINCO, new Rango(500, 2500));
+        // Bronce (500) a Diamante (2499)
+        Scrim scrim = scrim(Formato.CINCO_VS_CINCO, Rango.BRONCE, Rango.DIAMANTE);
         Random random = new Random(42);
         Set<Usuario> candidatos = new LinkedHashSet<>();
         for (int i = 0; i < 500; i++) {
-            candidatos.add(jugador("jugador" + i, random.nextInt(3000)));
+            candidatos.add(jugador("jugador" + i, 500 + random.nextInt(2000)));
         }
 
         Set<Usuario> seleccionados = assertTimeout(ofSeconds(2),
@@ -161,6 +162,6 @@ class ByMMRStrategyTest {
         int minimo = seleccionados.stream().mapToInt(Usuario::getMmr).min().orElseThrow();
         int maximo = seleccionados.stream().mapToInt(Usuario::getMmr).max().orElseThrow();
         assertTrue(maximo - minimo <= 150);
-        assertTrue(minimo >= 500 && maximo <= 2500);
+        assertTrue(minimo >= 500 && maximo <= 2499);
     }
 }

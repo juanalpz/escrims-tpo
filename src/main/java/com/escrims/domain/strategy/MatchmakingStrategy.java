@@ -1,12 +1,15 @@
-package com.escrims.domain.matchmaking;
+package com.escrims.domain.strategy;
 
-import com.escrims.domain.model.Scrim;
-import com.escrims.domain.model.Usuario;
+import com.escrims.domain.entities.Scrim;
+import com.escrims.domain.entities.Usuario;
 
 import java.util.Set;
 
 /**
  * «Strategy» Algoritmo de emparejamiento intercambiable.
+ *
+ * <p>Cada implementación concreta define un criterio distinto para elegir
+ * candidatos y llenar los cupos de un scrim (MMR, latencia, historial).
  */
 public interface MatchmakingStrategy {
 

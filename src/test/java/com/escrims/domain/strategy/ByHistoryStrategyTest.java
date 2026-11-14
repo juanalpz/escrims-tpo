@@ -1,12 +1,13 @@
-package com.escrims.domain.matchmaking;
+package com.escrims.domain.strategy;
 
-import com.escrims.domain.model.Formato;
-import com.escrims.domain.model.Juego;
-import com.escrims.domain.model.Region;
-import com.escrims.domain.model.RolJuego;
-import com.escrims.domain.model.Sancion;
-import com.escrims.domain.model.Scrim;
-import com.escrims.domain.model.Usuario;
+import com.escrims.domain.entities.Formato;
+import com.escrims.domain.entities.Juego;
+import com.escrims.domain.entities.Region;
+import com.escrims.domain.entities.RolJuego;
+import com.escrims.domain.entities.Sancion;
+import com.escrims.domain.entities.Scrim;
+import com.escrims.domain.entities.Usuario;
+import com.escrims.domain.strategy.ByHistoryStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -24,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ByHistoryStrategyTest {
 
-    private static final Region LAS = new Region("LAS", "Buenos Aires");
-    private static final Juego LOL = new Juego("LoL");
+    private static final Region LAS = Region.LAS;
+    private static final Juego LOL = Juego.LOL;
     private static final Clock RELOJ = Clock.fixed(Instant.parse("2026-11-12T18:00:00Z"), ZoneOffset.UTC);
     private static final LocalDateTime AHORA = LocalDateTime.now(RELOJ);
     private static final double DELTA = 1e-9;
@@ -39,7 +40,7 @@ class ByHistoryStrategyTest {
     }
 
     private static Scrim scrim(Formato formato, RolJuego... rolesBuscados) {
-        Scrim scrim = new Scrim(LOL, formato, LAS, null, 0);
+        Scrim scrim = new Scrim(LOL, formato, LAS, null, null, 0);
         for (RolJuego rol : rolesBuscados) {
             scrim.buscarRol(rol);
         }
@@ -54,7 +55,8 @@ class ByHistoryStrategyTest {
         assertEquals(1.0, estrategia.calcularSinergia(buscaSupport, jugador("sup", RolJuego.SUPPORT)), DELTA);
         assertEquals(0.5, estrategia.calcularSinergia(buscaSupport, jugador("flex")), DELTA);
         assertEquals(0.0, estrategia.calcularSinergia(buscaSupport, jugador("duel", RolJuego.DUELISTA)), DELTA);
-        assertEquals(1.0, estrategia.calcularSinergia(scrim(Formato.CINCO_VS_CINCO), jugador("duel2", RolJuego.DUELISTA)), DELTA);
+        assertEquals(1.0,
+                estrategia.calcularSinergia(scrim(Formato.CINCO_VS_CINCO), jugador("duel2", RolJuego.DUELISTA)), DELTA);
     }
 
     @Test
@@ -65,8 +67,8 @@ class ByHistoryStrategyTest {
         assertEquals(1.0, estrategia.calcularFairPlay(ejemplar), DELTA);
 
         Usuario irregular = jugador("irregular");
-        irregular.setRatingFairPlay(4.0);       // reputación 0.8
-        irregular.registrarHistorial(10, 2);    // constancia 0.8
+        irregular.setRatingFairPlay(4.0); // reputación 0.8
+        irregular.registrarHistorial(10, 2); // constancia 0.8
         irregular.agregarSancion(new Sancion(1, AHORA.minusDays(1))); // -0.15
         assertEquals(0.65, estrategia.calcularFairPlay(irregular), DELTA);
 
@@ -81,7 +83,7 @@ class ByHistoryStrategyTest {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.25, RELOJ);
         Scrim scrim = scrim(Formato.CINCO_VS_CINCO, RolJuego.TANQUE);
         Usuario candidato = jugador("duel", RolJuego.DUELISTA); // sinergia 0
-        candidato.setRatingFairPlay(3.0);                        // fair play (0.6 + 1) / 2 = 0.8
+        candidato.setRatingFairPlay(3.0); // fair play (0.6 + 1) / 2 = 0.8
 
         assertEquals(0.25 * 0.0 + 0.75 * 0.8, estrategia.calcularPuntaje(scrim, candidato), DELTA);
     }
@@ -120,7 +122,7 @@ class ByHistoryStrategyTest {
         Scrim scrim = scrim(Formato.CINCO_VS_CINCO, RolJuego.SUPPORT);
 
         Usuario toxico = jugador("toxico", RolJuego.DUELISTA); // sinergia 0
-        toxico.setRatingFairPlay(2.0);                          // fair play 0.7 -> puntaje 0.35
+        toxico.setRatingFairPlay(2.0); // fair play 0.7 -> puntaje 0.35
 
         assertFalse(estrategia.esElegible(scrim, toxico));
     }
@@ -165,7 +167,8 @@ class ByHistoryStrategyTest {
         Usuario limpio = jugador("limpio");
         Usuario otro = jugador("otro");
 
-        Set<Usuario> seleccionados = estrategia.seleccionarCandidatos(scrim, Set.of(yaAdentro, sancionado, limpio, otro));
+        Set<Usuario> seleccionados = estrategia.seleccionarCandidatos(scrim,
+                Set.of(yaAdentro, sancionado, limpio, otro));
 
         assertEquals(List.of(limpio), new ArrayList<>(seleccionados));
     }
