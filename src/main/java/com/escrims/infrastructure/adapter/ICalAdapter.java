@@ -21,7 +21,7 @@ import java.util.UUID;
  * (Google Calendar, Outlook, Apple Calendar)
  *
  * Cada evento incluye una alarma (VALARM) que dispara el recordatorio
- * automático N horas antes del inicio.
+ * automatico N horas antes del inicio.
  */
 public class ICalAdapter implements CalendarioService {
 
@@ -36,7 +36,7 @@ public class ICalAdapter implements CalendarioService {
     private final int horasRecordatorio;
     private final Clock reloj;
 
-    /** Último .ics generado y número de revisión (SEQUENCE) por scrim. */
+    /** Ultimo .ics generado y numero de revision (SEQUENCE) por scrim. */
     private final Map<UUID, String> calendarios = new HashMap<>();
     private final Map<UUID, Integer> secuencias = new HashMap<>();
 
