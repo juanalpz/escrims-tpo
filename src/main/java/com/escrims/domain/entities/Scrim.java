@@ -1,5 +1,7 @@
 package com.escrims.domain.entities;
 
+import com.escrims.domain.state.ScrimState;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -37,7 +39,7 @@ public class Scrim {
     private final Set<Usuario> jugadores = new LinkedHashSet<>();
     private Set<Postulacion> postulaciones = new HashSet<>();
     private Set<Confirmacion> confirmaciones = new HashSet<>();
-    private Object estado; // ScrimState — se tipará al implementar el patrón State
+    private ScrimState estado;
 
     // ── Constructores ──────────────────────────────────────────
 
@@ -183,11 +185,11 @@ public class Scrim {
 
     // ── Estado del ciclo de vida (ScrimState) ──────────────────
 
-    public Object getEstado() {
+    public ScrimState getEstado() {
         return estado;
     }
 
-    public void setEstado(Object estado) {
+    public void setEstado(ScrimState estado) {
         this.estado = estado;
     }
 
