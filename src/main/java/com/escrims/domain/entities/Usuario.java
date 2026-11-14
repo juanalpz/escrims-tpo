@@ -3,8 +3,10 @@ package com.escrims.domain.entities;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -25,6 +27,7 @@ public class Usuario {
     private int latenciaPromedio;
     private Region region;
     private final Set<RolJuego> rolesPreferidos = EnumSet.noneOf(RolJuego.class);
+    private final Map<Juego, Rango> rangosPorJuego = new EnumMap<>(Juego.class);
     private final List<Sancion> sanciones = new ArrayList<>();
     private int scrimsJugados;
     private int abandonos;
@@ -129,6 +132,37 @@ public class Usuario {
 
     public void agregarRolPreferido(RolJuego rol) {
         rolesPreferidos.add(rol);
+    }
+
+    // ── Rangos por Juego (RN-03 y perfil de usuario) ───────────
+
+    public Rango getRangoParaJuego(Juego juego) {
+        if (juego == null) {
+            return null;
+        }
+        Rango rango = rangosPorJuego.get(juego);
+        if (rango == null && mmr > 0) {
+            try {
+                return Rango.desdeMMR(mmr);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return rango;
+    }
+
+    public void asignarRango(Juego juego, Rango rango) {
+        if (juego == null) {
+            throw new IllegalArgumentException("El juego no puede ser nulo.");
+        }
+        if (rango == null) {
+            rangosPorJuego.remove(juego);
+        } else {
+            rangosPorJuego.put(juego, rango);
+        }
+    }
+
+    public Map<Juego, Rango> getRangosPorJuego() {
+        return Collections.unmodifiableMap(rangosPorJuego);
     }
 
     // ── Historial y fair play ──────────────────────────────────
