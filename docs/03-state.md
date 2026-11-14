@@ -57,5 +57,3 @@ ctx.confirmar(usuario);
 ctx.iniciar();
 ```
 `ScrimContext` mantiene sincronizado `scrim.getEstado()` en cada cambio.
-
-> Nota: los estados todavía no publican `ScrimStateChanged` al [bus de eventos](07-observer.md); el evento existe pero hay que publicarlo desde afuera.

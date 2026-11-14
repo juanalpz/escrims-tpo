@@ -36,5 +36,3 @@ bus.publish(new ScrimStateChanged(scrim.getId(), "Lobby armado", "Confirmado"));
 - No admite suscriptores ni eventos `null`.
 - Cada suscriptor filtra por tipo de evento (`instanceof`) y ignora los que no le interesan.
 - Hoy el único suscriptor concreto es [`CalendarioSubscriber`](09-calendario.md).
-
-> Pendiente: ninguna clase del dominio publica todavía `ScrimStateChanged` ni `SuplentePromovidoEvent`; quien orquesta (un servicio de aplicación) deberá llamar a `bus.publish(...)`.
