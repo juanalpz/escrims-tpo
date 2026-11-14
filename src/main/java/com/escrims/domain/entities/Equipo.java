@@ -4,7 +4,8 @@ import java.util.*;
 
 /**
  * Representa uno de los dos bandos (Equipo A o B) dentro de un Scrim.
- * Usa {@code Set<Usuario>} para garantizar que no haya jugadores duplicados en el mismo equipo.
+ * Usa {@code Set<Usuario>} para garantizar que no haya jugadores duplicados en
+ * el mismo equipo.
  */
 public class Equipo {
 
@@ -57,7 +58,8 @@ public class Equipo {
     }
 
     /**
-     * Permite reasignar el rol de un jugador ya presente en el equipo (usado por AsignarRolCommand).
+     * Permite reasignar el rol de un jugador ya presente en el equipo (usado por
+     * AsignarRolCommand).
      */
     public void asignarRol(Usuario usuario, RolJuego nuevoRol) {
         if (usuario == null) {
@@ -76,16 +78,40 @@ public class Equipo {
         return this.jugadores.size() == this.cupoMaximo;
     }
 
-    public UUID getId() { return id; }
-    public LadoEquipo getLado() { return lado; }
-    public int getCupoMaximo() { return cupoMaximo; }
-    public Set<Usuario> getJugadores() { return Collections.unmodifiableSet(jugadores); }
-    public Map<Usuario, RolJuego> getRolesAsignados() { return Collections.unmodifiableMap(rolesAsignados); }
+    public RolJuego getRolDe(Usuario usuario) {
+        return this.rolesAsignados.get(usuario);
+    }
+
+    public boolean contieneJugador(Usuario usuario) {
+        return this.jugadores.contains(usuario);
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public LadoEquipo getLado() {
+        return lado;
+    }
+
+    public int getCupoMaximo() {
+        return cupoMaximo;
+    }
+
+    public Set<Usuario> getJugadores() {
+        return Collections.unmodifiableSet(jugadores);
+    }
+
+    public Map<Usuario, RolJuego> getRolesAsignados() {
+        return Collections.unmodifiableMap(rolesAsignados);
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Equipo equipo)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Equipo equipo))
+            return false;
         return Objects.equals(id, equipo.id);
     }
 
