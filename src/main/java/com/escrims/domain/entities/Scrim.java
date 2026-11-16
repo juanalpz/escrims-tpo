@@ -311,6 +311,21 @@ public class Scrim {
     }
 
     /**
+     * Indica si un usuario forma parte del scrim como jugador, ya sea por
+     * una postulación aceptada o por haber sido incorporado directamente.
+     *
+     * @param usuario usuario que se desea consultar
+     * @return true si el usuario participa del scrim; false en caso contrario
+     */
+    public boolean esParticipante(Usuario usuario) {
+        if (usuario == null) {
+            return false;
+        }
+        return jugadores.contains(usuario) || postulaciones.stream()
+                .anyMatch(p -> p.getEstado() == EstadoPostulacion.ACEPTADA && p.getUsuario().equals(usuario));
+    }
+
+    /**
      * Obtiene las confirmaciones de participación del scrim.
      *
      * @return conjunto no modificable de confirmaciones

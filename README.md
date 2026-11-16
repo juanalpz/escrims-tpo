@@ -67,3 +67,54 @@ mvn compile
 # Ejecutar la suite completa de pruebas unitarias, integración y carga
 mvn test
 ```
+
+---
+
+## API REST
+
+Las operaciones de escritura requieren `Authorization: Bearer <token>` (se obtiene en el login) y el
+ID de usuario del cuerpo debe coincidir con el dueño del token.
+
+| Método y ruta | Descripción |
+|---|---|
+| `POST /api/auth/register` | Alta de cuenta. Devuelve el código de verificación de email. |
+| `POST /api/auth/verificar-email` | Verifica el email con ese código (RN-01). |
+| `POST /api/auth/login` | Devuelve el token de sesión. |
+| `GET /api/auth/me` | Cuenta dueña del token. |
+| `GET /api/scrims?juego=&region=&rangoMin=&rangoMax=&fecha=&latenciaMax=` | Scrims que buscan jugadores (filtros opcionales). |
+| `GET /api/scrims/{id}` | Resumen de un scrim. |
+| `POST /api/scrims` | Crea un scrim (Builder). |
+| `POST /api/scrims/{id}/postulaciones` | Postularse (State). |
+| `POST /api/scrims/{id}/confirmaciones` | Confirmar asistencia (RN-09). |
+| `POST /api/scrims/{id}/acciones/{command}` | Command: `asignar-rol`, `swap`, `invitar`, `deshacer`. Solo el organizador. |
+| `POST /api/scrims/{id}/cancelar` | Cancela antes del inicio (RN-12). |
+| `POST /api/scrims/{id}/finalizar` | Finaliza un scrim en juego. |
+| `POST /api/scrims/{id}/estadisticas` | Carga KDA/MVP de un jugador (RN-13). |
+| `POST /api/scrims/{id}/reportes` | Reporte de conducta; recorre la cadena de moderación. |
+| `POST /api/scrims/{id}/abandonos` | Registra un abandono (organizador, moderador o el propio jugador). |
+| `POST /api/scrims/{id}/no-shows` | Registra un no-show (organizador o moderador). |
+| `GET /api/usuarios/{id}/sanciones` | Strikes, cooldown e historial (el propio usuario o un moderador). |
+| `GET /api/moderacion/reportes?estado=` | Bandeja de reportes (moderadores). |
+| `POST /api/moderacion/reportes/{id}/resolucion` | Decisión del moderador humano sobre un reporte en revisión. |
+
+### Strikes y cooldowns
+
+Cada abandono, no-show o reporte sancionado suma **un strike**. El cooldown escala con la reincidencia
+(`PoliticaSanciones`): 1.º advertencia sin cooldown, 2.º 24 h, 3.º 72 h, 4.º en adelante 7 días. Con un
+cooldown activo el jugador no puede postularse ni organizar scrims (RN-06). Si llega la hora de un scrim
+con el lobby armado y sin el 100 % de confirmaciones, el scheduler lo cancela y registra el no-show de
+quienes no confirmaron.
+
+### Pipeline de reportes (Chain of Responsibility)
+
+1. **AutoResolverHandler**: desestima reportes improcedentes (el reportado no participó) y el primer
+   reporte contra un jugador sin antecedentes.
+2. **BotModeratorHandler**: con menos de 3 strikes aplica un strike automático.
+3. **HumanModeratorHandler**: con 3 o más strikes deja el reporte `EN_REVISION` para un moderador.
+
+Los moderadores se definen con `escrims.auth.moderadores` (emails separados por coma).
+
+### Limitaciones actuales
+
+Usuarios, scrims, reportes y sesiones se guardan en memoria (`infrastructure/persistence/memory`): se
+pierden al reiniciar. Las entidades JPA existentes todavía no están conectadas a estos servicios.

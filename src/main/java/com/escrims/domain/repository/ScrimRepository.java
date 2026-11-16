@@ -29,9 +29,11 @@ public interface ScrimRepository {
     Optional<Scrim> buscarPorId(UUID id);
 
     /**
-     * Busca los scrims disponibles según los criterios de filtrado indicados.
+     * Busca los scrims que siguen buscando jugadores según los criterios indicados.
+     * Los campos nulos del filtro (o la latencia en cero) no restringen la búsqueda;
+     * la fecha de inicio filtra por día.
      *
-     * @param filtro criterios de búsqueda de scrims
+     * @param filtro criterios de búsqueda de scrims, o null para no filtrar
      * @return lista de scrims disponibles que cumplen los criterios
      */
     List<Scrim> buscarDisponibles(DatosScrim filtro);

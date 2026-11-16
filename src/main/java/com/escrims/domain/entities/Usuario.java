@@ -33,6 +33,7 @@ public class Usuario {
     private final List<Sancion> sanciones = new ArrayList<>();
     private int scrimsJugados;
     private int abandonos;
+    private int noShows;
     private double ratingFairPlay = RATING_MAXIMO;
 
     /**
@@ -376,6 +377,55 @@ public class Usuario {
         }
         this.scrimsJugados = scrimsJugados;
         this.abandonos = abandonos;
+    }
+
+    /**
+     * Suma un scrim disputado al historial del usuario.
+     */
+    public void registrarScrimJugado() {
+        this.scrimsJugados++;
+    }
+
+    /**
+     * Registra el abandono de una partida. Si el scrim todavía no fue
+     * contabilizado como jugado se lo suma, para conservar la invariante
+     * de que los abandonos nunca superan los scrims disputados.
+     */
+    public void registrarAbandono() {
+        this.abandonos++;
+        if (this.abandonos > this.scrimsJugados) {
+            this.scrimsJugados = this.abandonos;
+        }
+    }
+
+    /**
+     * Registra una ausencia del usuario en un scrim al que estaba convocado.
+     */
+    public void registrarNoShow() {
+        this.noShows++;
+    }
+
+    /**
+     * Obtiene la cantidad de ausencias (no-show) registradas.
+     *
+     * @return número de no-shows del usuario
+     */
+    public int getNoShows() {
+        return noShows;
+    }
+
+    /**
+     * Obtiene el vencimiento del cooldown vigente más lejano (RN-06).
+     *
+     * @param momento fecha y hora de referencia
+     * @return fecha de finalización del cooldown activo, o null si no hay ninguno
+     */
+    public LocalDateTime getCooldownHasta(LocalDateTime momento) {
+        return sanciones.stream()
+                .filter(s -> s.estaActiva(momento))
+                .map(Sancion::getCooldownHasta)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
     }
 
     /**

@@ -13,6 +13,9 @@ public class Sancion {
     private final UUID id;
     private final int strikes;
     private final LocalDateTime cooldownHasta;
+    private final TipoInfraccion tipo;
+    private final String motivo;
+    private final LocalDateTime fechaAplicacion;
 
     /**
      * Crea una sanción con la cantidad de strikes y el límite del cooldown.
@@ -22,12 +25,59 @@ public class Sancion {
      * @throws IllegalArgumentException si la cantidad de strikes es menor o igual a cero
      */
     public Sancion(int strikes, LocalDateTime cooldownHasta) {
+        this(strikes, cooldownHasta, TipoInfraccion.CONDUCTA, null);
+    }
+
+    /**
+     * Crea una sanción indicando además la infracción que la originó.
+     *
+     * @param strikes cantidad de strikes asignados al usuario
+     * @param cooldownHasta fecha y hora de finalización del cooldown, o null si no aplica
+     * @param tipo infracción que originó la sanción
+     * @param motivo descripción legible de la causa, o null si no se informa
+     * @throws IllegalArgumentException si la cantidad de strikes es menor o igual a cero
+     *         o si el tipo de infracción es nulo
+     */
+    public Sancion(int strikes, LocalDateTime cooldownHasta, TipoInfraccion tipo, String motivo) {
         if (strikes <= 0) {
             throw new IllegalArgumentException("Los strikes deben ser mayores a 0.");
+        }
+        if (tipo == null) {
+            throw new IllegalArgumentException("El tipo de infracción es obligatorio.");
         }
         this.id = UUID.randomUUID();
         this.strikes = strikes;
         this.cooldownHasta = cooldownHasta;
+        this.tipo = tipo;
+        this.motivo = motivo;
+        this.fechaAplicacion = LocalDateTime.now();
+    }
+
+    /**
+     * Obtiene la infracción que originó la sanción.
+     *
+     * @return tipo de infracción
+     */
+    public TipoInfraccion getTipo() {
+        return tipo;
+    }
+
+    /**
+     * Obtiene la descripción de la causa de la sanción.
+     *
+     * @return motivo informado o null si no se registró
+     */
+    public String getMotivo() {
+        return motivo;
+    }
+
+    /**
+     * Obtiene el momento en que se aplicó la sanción.
+     *
+     * @return fecha y hora de aplicación
+     */
+    public LocalDateTime getFechaAplicacion() {
+        return fechaAplicacion;
     }
 
     /**
