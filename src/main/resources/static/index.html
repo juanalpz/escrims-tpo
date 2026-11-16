@@ -3,41 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>eScrims Mobile — Vista Jugador</title>
+    <title>eScrims — Jugador</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <nav class="top-switcher">
-      <div class="brand">
-        e<span>Scrims</span>
-        <small style="color: #94a3b8; font-weight: 400">| Demo UI</small>
-      </div>
+      <div class="brand">eScrims <small>demo</small></div>
       <div class="nav-links">
-        <a href="index.html" class="active">📱 App Móvil (Jugador)</a>
-        <a href="organizador.html">🖥️ Panel Web (Organizador)</a>
+        <a href="index.html" class="active">Jugador · móvil</a>
+        <a href="organizador.html">Organizador · web</a>
       </div>
     </nav>
 
     <main class="mobile-wrapper">
       <header class="mobile-header">
         <div>
-          <div style="font-weight: 700">Hola, ViperLAS 👋</div>
-          <div style="font-size: 0.78rem; color: #10b981">
-            ● Email Verificado · Platino II · LAS
-          </div>
+          <div class="player-name">ViperLAS</div>
+          <div class="player-sub">Platino II · LAS · email verificado</div>
         </div>
-        <span class="badge badge-confirmado">0 Strikes</span>
+        <span class="strikes"><b>0</b> strikes</span>
       </header>
 
       <section class="mobile-content">
         <div class="filters-bar">
-          <select id="filtroJuego" onchange="renderScrims()">
+          <select
+            id="filtroJuego"
+            aria-label="Filtrar por juego"
+            onchange="renderScrims()"
+          >
             <option value="TODOS">Todos los juegos</option>
             <option value="VALORANT">Valorant</option>
             <option value="LEAGUE_OF_LEGENDS">League of Legends</option>
             <option value="CS2">Counter-Strike 2</option>
           </select>
-          <select id="filtroRegion" onchange="renderScrims()">
+          <select
+            id="filtroRegion"
+            aria-label="Filtrar por región"
+            onchange="renderScrims()"
+          >
             <option value="TODAS">Todas las regiones</option>
             <option value="LAS">LAS</option>
             <option value="LAN">LAN</option>
@@ -45,34 +48,39 @@
           </select>
         </div>
 
-        <div id="toastMobile" class="toast"></div>
-        <div
-          id="listaScrims"
-          style="display: flex; flex-direction: column; gap: 0.85rem"
-        ></div>
+        <div id="toastMobile" class="toast" role="status"></div>
+        <div id="listaScrims"></div>
       </section>
 
       <footer class="mobile-bottom-nav">
-        <span class="active">🔍 Explorar</span>
-        <span>⚔️ Mis Scrims</span>
-        <span>📅 iCal Sync</span>
-        <span>👤 Perfil</span>
+        <span class="active">Explorar</span>
+        <span>Mis scrims</span>
+        <span>Calendario</span>
+        <span>Perfil</span>
       </footer>
     </main>
 
     <script>
+      const NOMBRES_JUEGO = {
+        VALORANT: 'Valorant',
+        LEAGUE_OF_LEGENDS: 'League of Legends',
+        CS2: 'Counter-Strike 2',
+      };
+
       const scrimsMock = [
         {
           id: 'scrim-101',
           juego: 'VALORANT',
           formato: '5v5',
           region: 'LAS',
-          rango: 'Oro - Diamante',
+          rango: 'Oro – Diamante',
           latenciaMax: 70,
-          hora: 'Hoy 21:00',
-          cupos: '9/10',
+          dia: 'Hoy',
+          hora: '21:00',
+          ocupados: 9,
+          cupos: 10,
           estado: 'Buscando jugadores',
-          badgeClass: 'badge-buscando',
+          estadoClass: 'state-buscando',
           postulado: false,
           confirmado: false,
         },
@@ -81,12 +89,14 @@
           juego: 'LEAGUE_OF_LEGENDS',
           formato: '5v5',
           region: 'LAS',
-          rango: 'Platino - Esmeralda',
+          rango: 'Platino – Esmeralda',
           latenciaMax: 60,
-          hora: 'Hoy 22:30',
-          cupos: '10/10',
+          dia: 'Hoy',
+          hora: '22:30',
+          ocupados: 10,
+          cupos: 10,
           estado: 'Lobby armado',
-          badgeClass: 'badge-lobby',
+          estadoClass: 'state-lobby',
           postulado: true,
           confirmado: false,
         },
@@ -95,34 +105,42 @@
           juego: 'CS2',
           formato: '5v5',
           region: 'BR',
-          rango: 'Nivel 6 - 8',
+          rango: 'Nivel 6 – 8',
           latenciaMax: 90,
-          hora: 'Mañana 20:00',
-          cupos: '6/10',
+          dia: 'Mañana',
+          hora: '20:00',
+          ocupados: 6,
+          cupos: 10,
           estado: 'Buscando jugadores',
-          badgeClass: 'badge-buscando',
+          estadoClass: 'state-buscando',
           postulado: false,
           confirmado: false,
         },
       ];
 
+      let timerAviso;
       function mostrarAviso(texto) {
         const toast = document.getElementById('toastMobile');
         toast.textContent = texto;
-        toast.style.display = 'block';
-        setTimeout(() => (toast.style.display = 'none'), 3200);
+        toast.classList.add('is-visible');
+        clearTimeout(timerAviso);
+        timerAviso = setTimeout(
+          () => toast.classList.remove('is-visible'),
+          3200,
+        );
       }
 
       function postularse(id) {
-        const rol = document.getElementById(`rol-${id}`).value;
+        const selectRol = document.getElementById(`rol-${id}`);
+        const rol = selectRol.options[selectRol.selectedIndex].text;
         const scrim = scrimsMock.find((s) => s.id === id);
         // Equivalente a POST /api/scrims/{id}/postulaciones
         scrim.postulado = true;
-        scrim.cupos = '10/10';
+        scrim.ocupados = scrim.cupos;
         scrim.estado = 'Lobby armado';
-        scrim.badgeClass = 'badge-lobby';
+        scrim.estadoClass = 'state-lobby';
         mostrarAviso(
-          `Postulación enviada como ${rol}. ¡Cupo completo -> Lobby armado!`,
+          `Te postulaste como ${rol}. Se completó el cupo: lobby armado.`,
         );
         renderScrims();
       }
@@ -132,11 +150,39 @@
         // Equivalente a POST /api/scrims/{id}/confirmaciones
         scrim.confirmado = true;
         scrim.estado = 'Confirmado';
-        scrim.badgeClass = 'badge-confirmado';
+        scrim.estadoClass = 'state-confirmado';
         mostrarAviso(
-          'Asistencia confirmada (100%). Evento sincronizado en calendario iCal.',
+          'Asistencia confirmada. El evento se agregó a tu calendario (iCal).',
         );
         renderScrims();
+      }
+
+      function renderCupos(s) {
+        let pips = '';
+        for (let i = 0; i < s.cupos; i++) {
+          pips += `<i class="${i < s.ocupados ? 'on' : ''}"></i>`;
+        }
+        return `<div class="slots" title="${s.ocupados} de ${s.cupos} cupos ocupados">${pips}<span>${s.ocupados}/${s.cupos}</span></div>`;
+      }
+
+      function renderAcciones(s) {
+        if (!s.postulado) {
+          return `
+            <select id="rol-${s.id}" aria-label="Rol">
+              <option value="DUELIST">Duelist / Carry</option>
+              <option value="CONTROLLER">Controller / Jungla</option>
+              <option value="INITIATOR">Initiator / Mid</option>
+              <option value="SENTINEL">Sentinel / Support</option>
+            </select>
+            <button class="btn-primary" onclick="postularse('${s.id}')">Postularme</button>`;
+        }
+        if (!s.confirmado) {
+          return `
+            <button class="btn-primary block" onclick="confirmarAsistencia('${s.id}')">
+              Confirmar asistencia <span class="ref">RN-09</span>
+            </button>`;
+        }
+        return `<button class="btn-done block" disabled>Asistencia confirmada</button>`;
       }
 
       function renderScrims() {
@@ -150,46 +196,29 @@
             (region === 'TODAS' || s.region === region),
         );
 
+        if (filtrados.length === 0) {
+          contenedor.innerHTML = `<p class="empty" style="padding:1.25rem 1.1rem">No hay scrims con esos filtros.</p>`;
+          return;
+        }
+
         contenedor.innerHTML = filtrados
           .map(
             (s) => `
-            <article class="scrim-card">
-                <div class="scrim-card-header">
-                    <strong>${s.juego} · ${s.formato}</strong>
-                    <span class="badge ${s.badgeClass}">${s.estado}</span>
+            <article class="scrim">
+              <div class="scrim-when">
+                <span class="day">${s.dia}</span>
+                <span class="time">${s.hora}</span>
+              </div>
+              <div class="scrim-body">
+                <div class="scrim-top">
+                  <span class="state ${s.estadoClass}">${s.estado}</span>
+                  ${renderCupos(s)}
                 </div>
-                <div class="scrim-meta">
-                    <span>🌎 ${s.region}</span>
-                    <span>🏆 ${s.rango}</span>
-                    <span>📶 ≤ ${s.latenciaMax} ms</span>
-                    <span>🕒 ${s.hora}</span>
-                    <span>👥 ${s.cupos}</span>
-                </div>
-                <div class="scrim-actions">
-                    ${
-                      !s.postulado
-                        ? `
-                        <select id="rol-${s.id}">
-                            <option value="DUELIST">Duelist / Carry</option>
-                            <option value="CONTROLLER">Controller / Jungla</option>
-                            <option value="INITIATOR">Initiator / Mid</option>
-                            <option value="SENTINEL">Sentinel / Support</option>
-                        </select>
-                        <button class="btn-primary" onclick="postularse('${s.id}')">Postularme</button>
-                    `
-                        : !s.confirmado
-                          ? `
-                        <button class="btn-warning" style="width:100%;" onclick="confirmarAsistencia('${s.id}')">
-                            Confirmar Asistencia (RN-09)
-                        </button>
-                    `
-                          : `
-                        <button class="btn-outline" style="width:100%;" disabled>✔ Confirmado para jugar</button>
-                    `
-                    }
-                </div>
-            </article>
-        `,
+                <h3>${NOMBRES_JUEGO[s.juego]} <span>${s.formato}</span></h3>
+                <div class="scrim-meta">${s.region} · ${s.rango} · ≤ ${s.latenciaMax} ms</div>
+                <div class="scrim-actions">${renderAcciones(s)}</div>
+              </div>
+            </article>`,
           )
           .join('');
       }
