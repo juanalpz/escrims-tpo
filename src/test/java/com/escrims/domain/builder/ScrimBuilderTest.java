@@ -11,12 +11,15 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests Unitarios para {@link ScrimBuilder} con mensajes de depuración en consola.
- * Permiten verificar visualmente cada regla de negocio e invariante durante la ejecución.
+ * Verifica las invariantes y reglas de negocio del patrón Builder
+ * mediante pruebas unitarias de ScrimBuilder con JUnit 5.
  */
 class ScrimBuilderTest {
 
     private Usuario organizadorValido;
+    /**
+     * Inicializa un organizador con correo verificado y sin sanciones activas (RN-01, RN-06).
+     */
 
     @BeforeEach
     void setUp() {
@@ -24,6 +27,9 @@ class ScrimBuilderTest {
         organizadorValido = new Usuario("organizador", 1500, 30, Region.LAS);
         organizadorValido.setEmailVerificado(true);
     }
+    /**
+     * Comprueba la creación de un scrim válido, sus atributos y su estado inicial de búsqueda.
+     */
 
     @Test
     @DisplayName("Camino feliz: Construye un Scrim válido con todas sus invariantes cumplidas")
@@ -76,6 +82,9 @@ class ScrimBuilderTest {
 
         System.out.println("[TEST DEBUG] RESULTADO: OK - Todas las aserciones del camino feliz se cumplieron.");
     }
+    /**
+     * Verifica la asignación de modalidad casual y duración de 60 minutos cuando se omiten.
+     */
 
     @Test
     @DisplayName("Valores por defecto: Asigna Modalidad.CASUAL y duración de 60 minutos si no se especifican")
@@ -100,6 +109,9 @@ class ScrimBuilderTest {
         assertEquals(60, scrim.getDuracion(), "Por defecto la duración debe ser de 60 minutos.");
         System.out.println("[TEST DEBUG] RESULTADO: OK - Valores por defecto aplicados correctamente.");
     }
+    /**
+     * Verifica que un scrim sin límites de rango acepte cualquier valor de MMR.
+     */
 
     @Test
     @DisplayName("Permite crear un Scrim abierto sin restricción de rangos (ambos null)")
@@ -124,6 +136,9 @@ class ScrimBuilderTest {
 
         System.out.println("[TEST DEBUG] RESULTADO: OK - Scrim abierto admite tanto MMR=100 como MMR=3000.");
     }
+    /**
+     * Verifica que un único rango admita solo los valores de MMR comprendidos en él.
+     */
 
     @Test
     @DisplayName("Permite crear un Scrim cerrado a un único rango (rangoMin == rangoMax)")
@@ -156,6 +171,9 @@ class ScrimBuilderTest {
 
         System.out.println("[TEST DEBUG] RESULTADO: OK - Scrim cerrado a un único rango validado exitosamente.");
     }
+    /**
+     * Comprueba que se rechace un organizador sin correo electrónico verificado (RN-01).
+     */
 
     @Test
     @DisplayName("RN-01: Falla si el organizador no tiene el email verificado")
@@ -180,6 +198,9 @@ class ScrimBuilderTest {
         assertTrue(ex.getMessage().contains("email verificado"));
         System.out.println("[TEST DEBUG] RESULTADO: OK - Se bloqueó la creación por falta de verificación.");
     }
+    /**
+     * Comprueba que una sanción o período de espera activo impida crear un scrim (RN-06).
+     */
 
     @Test
     @DisplayName("RN-06: Falla si el organizador tiene un cooldown o sanción activa")
@@ -206,6 +227,9 @@ class ScrimBuilderTest {
         assertTrue(ex.getMessage().contains("sanción activa"));
         System.out.println("[TEST DEBUG] RESULTADO: OK - Se bloqueó la creación por sanción activa.");
     }
+    /**
+     * Comprueba que se rechace un rango mínimo superior al máximo (RN-03).
+     */
 
     @Test
     @DisplayName("RN-03: Falla si el rango mínimo es superior al rango máximo")
@@ -229,6 +253,9 @@ class ScrimBuilderTest {
         System.out.println("[TEST DEBUG] Excepción capturada correctamente: " + ex.getMessage());
         System.out.println("[TEST DEBUG] RESULTADO: OK - Invariante de coherencia de rango validada.");
     }
+    /**
+     * Verifica que ambos límites de rango deban definirse conjuntamente o quedar abiertos.
+     */
 
     @Test
     @DisplayName("Falla si se define solo rango mínimo sin rango máximo")
@@ -251,6 +278,9 @@ class ScrimBuilderTest {
         System.out.println("[TEST DEBUG] Excepción capturada correctamente: " + ex.getMessage());
         System.out.println("[TEST DEBUG] RESULTADO: OK - Se exige definir ambos extremos o dejar ambos abiertos.");
     }
+    /**
+     * Comprueba el rechazo de latencias nulas, negativas o superiores a 500 ms (RN-04).
+     */
 
     @Test
     @DisplayName("RN-04: Falla si la latencia máxima es cero, negativa o mayor a 500ms")
@@ -293,6 +323,9 @@ class ScrimBuilderTest {
 
         System.out.println("[TEST DEBUG] RESULTADO: OK - Los tres casos de latencia inválida fueron rechazados.");
     }
+    /**
+     * Comprueba que no se permita programar un scrim en una fecha pasada.
+     */
 
     @Test
     @DisplayName("Invariante temporal: Falla si la fecha/hora es pasada")
@@ -314,6 +347,9 @@ class ScrimBuilderTest {
         System.out.println("[TEST DEBUG] Excepción capturada correctamente: " + ex.getMessage());
         System.out.println("[TEST DEBUG] RESULTADO: OK - El builder rechaza partidas en fechas pasadas.");
     }
+    /**
+     * Comprueba que la duración se encuentre entre 15 y 360 minutos.
+     */
 
     @Test
     @DisplayName("Falla si la duración en minutos es menor a 15 o mayor a 360")
@@ -345,6 +381,9 @@ class ScrimBuilderTest {
 
         System.out.println("[TEST DEBUG] RESULTADO: OK - Límites de duración verificados exitosamente.");
     }
+    /**
+     * Comprueba que los roles obligatorios no excedan los cupos del scrim (RN-05).
+     */
 
     @Test
     @DisplayName("RN-05: Falla si la suma de roles obligatorios supera el cupo total")
@@ -367,6 +406,9 @@ class ScrimBuilderTest {
         System.out.println("[TEST DEBUG] Excepción capturada correctamente: " + ex.getMessage());
         System.out.println("[TEST DEBUG] RESULTADO: OK - El builder no permite exigir más roles que cupos.");
     }
+    /**
+     * Verifica que una regla de rol rechace roles nulos y cantidades no positivas.
+     */
 
     @Test
     @DisplayName("Falla al agregar regla de rol con rol nulo o cantidad menor o igual a cero")
@@ -396,6 +438,9 @@ class ScrimBuilderTest {
 
         System.out.println("[TEST DEBUG] RESULTADO: OK - Validaciones de agregarReglaRol verificadas correctamente.");
     }
+    /**
+     * Verifica que la creación falle al faltar cualquiera de los campos obligatorios.
+     */
 
     @Test
     @DisplayName("Falla si falta algún campo obligatorio")
@@ -455,6 +500,9 @@ class ScrimBuilderTest {
 
         System.out.println("[TEST DEBUG] RESULTADO: OK - Se exige la totalidad de campos obligatorios.");
     }
+    /**
+     * Comprueba que los cupos definidos coincidan con el formato seleccionado.
+     */
 
     @Test
     @DisplayName("Falla si se fuerza una cantidad de cupos inconsistente con el Formato")

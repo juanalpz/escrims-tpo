@@ -1,19 +1,21 @@
-package com.escrims.infrastructure.persistence;
+package com.escrims.infrastructure.persistence.repository;
 
 import com.escrims.domain.entities.*;
 import com.escrims.infrastructure.persistence.entity.*;
-import com.escrims.infrastructure.persistence.repository.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica la persistencia y recuperación de entidades mediante
+ * los repositorios Spring Data JPA y el patrón Repository.
+ */
 @DataJpaTest
 class ScrimJpaRepositoryTest {
 
@@ -23,6 +25,11 @@ class ScrimJpaRepositoryTest {
     @Autowired private ConfirmacionJpaRepository confirmacionRepo;
     @Autowired private EstadisticaJpaRepository estadisticaRepo;
 
+    /**
+     * Verifica la persistencia de usuarios, scrims, postulaciones,
+     * confirmaciones y estadísticas, así como su recuperación
+     * mediante consultas de los repositorios JPA.
+     */
     @Test
     @DisplayName("Persiste y consulta Usuario, Scrim, Postulación, Confirmación y Estadística con Spring Data JPA")
     void deberiaPersistirYRecuperarCicloCompletoEnBaseDeDatos() {

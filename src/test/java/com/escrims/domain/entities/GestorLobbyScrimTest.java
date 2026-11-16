@@ -10,11 +10,19 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica la distribución de jugadores, la gestión de suplentes
+ * y las operaciones sobre los equipos del lobby de un scrim (RN-17).
+ */
 class GestorLobbyScrimTest {
 
     private GestorLobbyScrim gestor;
     private Usuario j1, j2, suplente1, suplente2;
 
+    /**
+     * Inicializa los jugadores de prueba y un lobby de formato 1v1
+     * antes de ejecutar cada caso de prueba.
+     */
     @BeforeEach
     void setUp() {
         Usuario org = new Usuario();
@@ -41,6 +49,10 @@ class GestorLobbyScrimTest {
         gestor = new GestorLobbyScrim(scrim1v1);
     }
 
+    /**
+     * Verifica la distribución de titulares entre ambos equipos
+     * y la incorporación de jugadores excedentes a una lista de espera FIFO.
+     */
     @Test
     @DisplayName("Distribuye titulares en Equipo A y Equipo B y envía excedentes a lista de espera FIFO")
     void deberiaAsignarTitularesYEnviarExcedentesAListaEspera() {
@@ -56,6 +68,10 @@ class GestorLobbyScrimTest {
         assertSame(suplente2, gestor.getListaEsperaOrdenada().get(1));
     }
 
+    /**
+     * Verifica que la baja de un titular promueva automáticamente
+     * al primer suplente disponible, respetando el orden FIFO (RN-17).
+     */
     @Test
     @DisplayName("Al darse de baja un titular, promueve automáticamente al primer suplente FIFO (RN-17)")
     void deberiaPromoverPrimerSuplenteCuandoBajaUnTitular() {
@@ -74,6 +90,10 @@ class GestorLobbyScrimTest {
         assertEquals(1, gestor.getListaEsperaOrdenada().size());
     }
 
+    /**
+     * Verifica el intercambio de jugadores entre los equipos
+     * y la reasignación de roles dentro del lobby.
+     */
     @Test
     @DisplayName("Permite intercambiar (swap) jugadores entre Equipo A y Equipo B y reasignar roles")
     void deberiaIntercambiarJugadoresYAsignarRoles() {

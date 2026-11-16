@@ -21,6 +21,11 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica la integración del ciclo de vida completo de un scrim mediante
+ * los patrones Builder, Strategy, State, Command, Observer y Repository
+ * (CU7, CU8, RN-04, RN-09, RN-12).
+ */
 class ScrimLifecycleIntegrationTest {
 
     private DomainEventBus eventBus;
@@ -28,6 +33,10 @@ class ScrimLifecycleIntegrationTest {
     private List<Scrim> repositorioScrims;
     private ScrimScheduler scheduler;
 
+    /**
+     * Inicializa el bus de eventos, el registro de transiciones
+     * y el repositorio simulado utilizados por el scheduler.
+     */
     @BeforeEach
     void setUp() {
         eventBus = new DomainEventBus();
@@ -41,11 +50,22 @@ class ScrimLifecycleIntegrationTest {
         });
 
         ScrimSchedulerRepository repo = new ScrimSchedulerRepository() {
+
+            /**
+             * Obtiene una copia de los scrims almacenados en memoria.
+             *
+             * @return lista de scrims disponibles para el scheduler
+             */
             @Override
             public List<Scrim> obtenerScrimsActivos() {
                 return List.copyOf(repositorioScrims);
             }
 
+            /**
+             * Simula la persistencia de un scrim evitando duplicados.
+             *
+             * @param scrim scrim que se desea almacenar
+             */
             @Override
             public void guardar(Scrim scrim) {
                 if (!repositorioScrims.contains(scrim)) {
@@ -57,6 +77,14 @@ class ScrimLifecycleIntegrationTest {
         scheduler = new ScrimScheduler(repo, eventBus);
     }
 
+    /**
+     * Crea un usuario apto para participar en un scrim,
+     * con correo verificado y configuración de juego válida.
+     *
+     * @param username nombre de usuario del jugador
+     * @param pingMs latencia promedio del jugador en milisegundos
+     * @return usuario configurado para la prueba de integración
+     */
     private Usuario crearJugadorApto(String username, int pingMs) {
         Usuario u = new Usuario();
         u.setUsername(username);
@@ -68,6 +96,12 @@ class ScrimLifecycleIntegrationTest {
         return u;
     }
 
+    /**
+     * Verifica la integración de la creación, el matchmaking, la gestión
+     * del lobby, las confirmaciones y las transiciones automáticas,
+     * incluyendo las restricciones y eventos del ciclo de vida
+     * (CU7, CU8, RN-04, RN-09, RN-12).
+     */
     @Test
     @DisplayName("Integración E2E Dominio: crear -> emparejar -> armar lobby -> confirmar -> iniciar (cron) -> finalizar")
     void deberiaCompletarCicloDeVidaCompletoDeUnScrim() {

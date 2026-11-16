@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Proceso automático en segundo plano (Cron / Scheduler) encargado de ejecutar
- * las transiciones temporales del ciclo de vida de los Scrims (CU7 y CU8).
+ * Ejecuta las transiciones temporales automáticas del ciclo de vida
+ * de los scrims mediante tareas programadas de Spring (CU7, CU8).
  */
 @Component
 public class ScrimScheduler {
@@ -27,6 +27,14 @@ public class ScrimScheduler {
     private final ScrimSchedulerRepository repository;
     private final DomainEventBus eventBus;
 
+    /**
+     * Inicializa el scheduler con el repositorio de scrims activos
+     * y el bus de eventos de dominio.
+     *
+     * @param repository repositorio utilizado para consultar y guardar scrims
+     * @param eventBus bus encargado de publicar los cambios de estado
+     * @throws IllegalArgumentException si el repositorio o el bus de eventos son nulos
+     */
     public ScrimScheduler(ScrimSchedulerRepository repository, DomainEventBus eventBus) {
         if (repository == null || eventBus == null) {
             throw new IllegalArgumentException("El repositorio y el eventBus son obligatorios.");
@@ -36,8 +44,9 @@ public class ScrimScheduler {
     }
 
     /**
-     * Ejecución periódica automática cada 30 segundos (configurable por
-     * properties).
+     * Ejecuta periódicamente la evaluación de transiciones automáticas
+     * utilizando la fecha y hora actuales, con un intervalo predeterminado
+     * de 30 segundos configurable mediante propiedades de Spring.
      */
     @Scheduled(fixedRateString = "${escrims.scheduler.rate-ms:30000}")
     public void ejecutarCicloAutomatico() {
@@ -45,8 +54,10 @@ public class ScrimScheduler {
     }
 
     /**
-     * Evalúa todos los scrims activos contra una marca de tiempo de referencia
-     * (facilita el testing determinístico sin esperas reales).
+     * Evalúa los scrims activos y procesa las transiciones programadas
+     * según una fecha y hora de referencia (CU7, CU8).
+     *
+     * @param referenciaActual fecha y hora utilizada para evaluar las transiciones
      */
     public void procesarTransicionesProgramadas(LocalDateTime referenciaActual) {
         List<Scrim> activos = repository.obtenerScrimsActivos();
@@ -55,13 +66,19 @@ public class ScrimScheduler {
             try {
                 evaluarScrim(scrim, referenciaActual);
             } catch (Exception ex) {
-                // Aislamos fallos individuales para no interrumpir el lote completo
                 log.error("Error al procesar transición automática para el Scrim {}: {}",
                         scrim.getId(), ex.getMessage(), ex);
             }
         }
     }
 
+    /**
+     * Evalúa las condiciones temporales de un scrim y ejecuta las transiciones
+     * correspondientes, persistiendo los cambios y publicando sus eventos.
+     *
+     * @param scrim scrim cuyo estado se desea evaluar
+     * @param ahora fecha y hora de referencia para las transiciones
+     */
     private void evaluarScrim(Scrim scrim, LocalDateTime ahora) {
         if (scrim.getFechaHora() == null || scrim.getEstado() == null) {
             return;
@@ -69,7 +86,7 @@ public class ScrimScheduler {
 
         ScrimContext ctx = new ScrimContext(scrim);
 
-        // 1. Confirmado -> EnJuego al alcanzar la fecha y hora pactada (CU7)
+        // CU7: iniciar automáticamente el scrim confirmado al alcanzar la fecha programada.
         if (ctx.getState() instanceof ConfirmadoState && !ahora.isBefore(scrim.getFechaHora())) {
             String estadoAnterior = ctx.getState().getNombreEstado();
             ctx.iniciar();
@@ -81,8 +98,7 @@ public class ScrimScheduler {
             return;
         }
 
-        // 2. EnJuego -> Finalizado al cumplirse la duración estimada de la partida
-        // (CU8)
+        // CU8: finalizar automáticamente la partida al cumplirse su duración estimada.
         if (ctx.getState() instanceof EnJuegoState) {
             int duracionMin = (scrim.getDuracion() != null && scrim.getDuracion() > 0) ? scrim.getDuracion()
                     : DURACION_POR_DEFECTO_MINUTOS;

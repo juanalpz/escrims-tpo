@@ -6,7 +6,6 @@ import com.escrims.domain.entities.Rango;
 import com.escrims.domain.entities.Region;
 import com.escrims.domain.entities.Scrim;
 import com.escrims.domain.entities.Usuario;
-import com.escrims.domain.strategy.ByMMRStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -22,19 +21,42 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static java.time.Duration.ofSeconds;
 
+/**
+ * Verifica los criterios de elegibilidad, equilibrio de MMR y selección
+ * de jugadores de ByMMRStrategy mediante el patrón Strategy.
+ */
 class ByMMRStrategyTest {
 
     private static final Region LAS = Region.LAS;
     private static final Juego VALORANT = Juego.VALORANT;
 
+    /**
+     * Crea un usuario de prueba con el MMR indicado.
+     *
+     * @param nombre nombre del jugador
+     * @param mmr puntuación de matchmaking del jugador
+     * @return usuario configurado para las pruebas
+     */
     private static Usuario jugador(String nombre, int mmr) {
         return new Usuario(nombre, mmr, 40, LAS);
     }
 
+    /**
+     * Crea un scrim de prueba con el formato y rango permitidos.
+     *
+     * @param formato formato de la partida
+     * @param min rango mínimo permitido
+     * @param max rango máximo permitido
+     * @return scrim configurado para evaluar candidatos
+     */
     private static Scrim scrim(Formato formato, Rango min, Rango max) {
         return new Scrim(VALORANT, formato, LAS, min, max, 0);
     }
 
+    /**
+     * Verifica que la estrategia rechace candidatos fuera del rango
+     * de MMR permitido y acepte los valores límite (RN-03).
+     */
     @Test
     void rechazaAlCandidatoFueraDelRangoDelScrim() {
         ByMMRStrategy estrategia = new ByMMRStrategy(300);
@@ -47,6 +69,10 @@ class ByMMRStrategyTest {
         assertTrue(estrategia.esElegible(scrim, jugador("plat", 1800)));
     }
 
+    /**
+     * Verifica que un scrim sin restricciones de rango
+     * admita jugadores de cualquier nivel de MMR.
+     */
     @Test
     void sinRangoAdmiteCualquierNivel() {
         ByMMRStrategy estrategia = new ByMMRStrategy(100);
@@ -56,6 +82,10 @@ class ByMMRStrategyTest {
         assertTrue(estrategia.esElegible(scrim, jugador("radiante", 3000)));
     }
 
+    /**
+     * Verifica que los nuevos candidatos respeten la tolerancia
+     * de MMR respecto del promedio de los jugadores del lobby.
+     */
     @Test
     void conLobbyArmadoExigeEstarDentroDeLaToleranciaDelPromedio() {
         ByMMRStrategy estrategia = new ByMMRStrategy(100);
@@ -69,6 +99,10 @@ class ByMMRStrategyTest {
         assertFalse(estrategia.esElegible(scrim, jugador("muyAbajo", 1250)));
     }
 
+    /**
+     * Verifica que, con jugadores en el lobby, se prioricen
+     * los candidatos cuyo MMR sea más cercano al promedio existente.
+     */
     @Test
     void conLobbyArmadoSeleccionaALosMasCercanosAlPromedio() {
         ByMMRStrategy estrategia = new ByMMRStrategy(200);
@@ -86,6 +120,10 @@ class ByMMRStrategyTest {
         assertEquals(List.of(cerca, medio), new ArrayList<>(seleccionados));
     }
 
+    /**
+     * Verifica que, con el lobby vacío, la estrategia seleccione
+     * el grupo de jugadores con menor diferencia de MMR.
+     */
     @Test
     void conLobbyVacioEligeElGrupoMasParejo() {
         ByMMRStrategy estrategia = new ByMMRStrategy(100);
@@ -100,6 +138,10 @@ class ByMMRStrategyTest {
         assertEquals(Set.of(c, d), seleccionados);
     }
 
+    /**
+     * Verifica que la selección inicial no agrupe jugadores
+     * cuya diferencia de MMR supere la tolerancia configurada.
+     */
     @Test
     void conLobbyVacioNoJuntaJugadoresQueSuperanLaDiferenciaMaxima() {
         ByMMRStrategy estrategia = new ByMMRStrategy(100);
@@ -115,6 +157,10 @@ class ByMMRStrategyTest {
         assertEquals(Set.of(a, b, c), seleccionados);
     }
 
+    /**
+     * Verifica que la estrategia respete los cupos disponibles
+     * y excluya a los jugadores que ya pertenecen al lobby.
+     */
     @Test
     void noSeleccionaMasQueLosCuposDisponiblesNiAQuienesYaEstanEnElLobby() {
         ByMMRStrategy estrategia = new ByMMRStrategy(500);
@@ -129,6 +175,10 @@ class ByMMRStrategyTest {
         assertFalse(seleccionados.contains(yaAdentro));
     }
 
+    /**
+     * Verifica que no se seleccionen nuevos candidatos
+     * cuando todos los cupos del scrim están ocupados.
+     */
     @Test
     void conLobbyCompletoNoSeleccionaANadie() {
         ByMMRStrategy estrategia = new ByMMRStrategy(500);
@@ -139,11 +189,20 @@ class ByMMRStrategyTest {
         assertTrue(estrategia.seleccionarCandidatos(scrim, Set.of(jugador("c", 1500))).isEmpty());
     }
 
+    /**
+     * Verifica que la estrategia rechace valores negativos
+     * de tolerancia de MMR durante su construcción.
+     */
     @Test
     void rechazaToleranciaNegativa() {
         assertThrows(IllegalArgumentException.class, () -> new ByMMRStrategy(-1));
     }
 
+    /**
+     * Verifica que la estrategia procese 500 candidatos en menos
+     * de dos segundos y seleccione un grupo válido de 10 jugadores
+     * respetando los límites de MMR y la tolerancia configurada.
+     */
     @Test
     void empareja500CandidatosEnMenosDeDosSegundos() {
         ByMMRStrategy estrategia = new ByMMRStrategy(150);

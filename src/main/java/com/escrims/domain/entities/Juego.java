@@ -1,6 +1,8 @@
 package com.escrims.domain.entities;
 
-/** Juego al que pertenece un scrim. */
+/**
+ * Define los juegos disponibles para la creación de scrims.
+ */
 public enum Juego {
     VALORANT,
     LOL,

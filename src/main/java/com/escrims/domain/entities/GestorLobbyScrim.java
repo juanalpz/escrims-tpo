@@ -3,16 +3,22 @@ package com.escrims.domain.entities;
 import java.util.*;
 
 /**
- * Administra la distribución de titulares en Equipo A / Equipo B
- * y la lista de espera (suplentes) FIFO de un Scrim (RN-05, RN-10, RN-17).
+ * Gestiona la asignación de jugadores a los equipos de un scrim
+ * y la lista de espera de suplentes mediante el criterio FIFO (RN-05, RN-10, RN-17).
  */
 public class GestorLobbyScrim {
 
     private final Scrim scrim;
     private final Equipo equipoA;
     private final Equipo equipoB;
-    private final LinkedHashMap<Usuario, RolJuego> listaEspera; // Orden FIFO sin duplicados
+    private final LinkedHashMap<Usuario, RolJuego> listaEspera;
 
+    /**
+     * Inicializa el lobby de un scrim con dos equipos y una lista de espera vacía.
+     *
+     * @param scrim scrim al que pertenece el lobby
+     * @throws IllegalArgumentException si el scrim es nulo
+     */
     public GestorLobbyScrim(Scrim scrim) {
         if (scrim == null) {
             throw new IllegalArgumentException("El Scrim es obligatorio.");
@@ -25,10 +31,14 @@ public class GestorLobbyScrim {
     }
 
     /**
-     * Incorpora un jugador como titular si hay lugar en Equipo A o Equipo B;
-     * si ambos están completos, lo encola en la lista de espera (suplentes).
-     * 
-     * @return true si entró como titular, false si quedó en lista de espera.
+     * Incorpora un jugador al primer equipo disponible o a la lista de espera
+     * si ambos equipos están completos (RN-05).
+     *
+     * @param usuario jugador que desea incorporarse
+     * @param rol rol de juego asignado al jugador
+     * @return true si ingresa como titular; false si queda en lista de espera
+     * @throws IllegalArgumentException si el usuario o el rol son nulos
+     * @throws IllegalStateException si el jugador ya pertenece al lobby o a la lista de espera
      */
     public boolean incorporarJugador(Usuario usuario, RolJuego rol) {
         if (usuario == null || rol == null) {
@@ -50,8 +60,15 @@ public class GestorLobbyScrim {
     }
 
     /**
-     * Incorpora un jugador directamente a un bando específico (soporte para
-     * InvitarJugadorCommand / undo).
+     * Incorpora un jugador a un equipo específico, como soporte para
+     * el comando de invitación y su reversión.
+     *
+     * @param usuario jugador que se desea incorporar
+     * @param rol rol de juego asignado al jugador
+     * @param lado equipo al que se incorpora el jugador
+     * @return true si el jugador es incorporado correctamente; false en caso contrario
+     * @throws IllegalArgumentException si el usuario, el rol o el lado son nulos
+     * @throws IllegalStateException si el jugador ya es titular en algún equipo
      */
     public boolean incorporarAEquipo(Usuario usuario, RolJuego rol, LadoEquipo lado) {
         if (usuario == null || rol == null || lado == null) {
@@ -66,8 +83,12 @@ public class GestorLobbyScrim {
     }
 
     /**
-     * Da de baja a un titular y promueve automáticamente al primer suplente FIFO
-     * (RN-10 / RN-17).
+     * Da de baja a un jugador titular y promueve al primer suplente disponible
+     * según el orden de ingreso FIFO (RN-10, RN-17).
+     *
+     * @param titularSaliente jugador titular que abandona el equipo
+     * @return suplente promovido o un Optional vacío si no hay suplentes
+     * @throws IllegalStateException si el jugador no es titular de ningún equipo
      */
     public Optional<Usuario> darDeBajaYPromoverSuplente(Usuario titularSaliente) {
         Equipo equipoAfectado = obtenerEquipoDe(titularSaliente)
@@ -75,6 +96,7 @@ public class GestorLobbyScrim {
 
         equipoAfectado.removerJugador(titularSaliente);
 
+        // RN-10 / RN-17: se prioriza al suplente con mayor antigüedad en la lista.
         if (!listaEspera.isEmpty()) {
             Map.Entry<Usuario, RolJuego> siguiente = listaEspera.entrySet().iterator().next();
             Usuario suplente = siguiente.getKey();
@@ -89,8 +111,13 @@ public class GestorLobbyScrim {
     }
 
     /**
-     * Intercambia dos jugadores entre Equipo A y Equipo B conservando sus roles
-     * (soporte para SwapJugadoresCommand).
+     * Intercambia dos jugadores titulares de equipos distintos,
+     * conservando sus respectivos roles de juego.
+     *
+     * @param jugador1 primer jugador que se desea intercambiar
+     * @param jugador2 segundo jugador que se desea intercambiar
+     * @throws IllegalStateException si algún jugador no es titular
+     *         o si ambos pertenecen al mismo equipo
      */
     public void intercambiarJugadores(Usuario jugador1, Usuario jugador2) {
         Equipo eq1 = obtenerEquipoDe(jugador1)
@@ -112,14 +139,32 @@ public class GestorLobbyScrim {
         eq2.agregarJugador(jugador1, rol1);
     }
 
+    /**
+     * Verifica si un usuario es titular en alguno de los equipos.
+     *
+     * @param usuario jugador que se desea consultar
+     * @return true si pertenece a un equipo como titular; false en caso contrario
+     */
     public boolean esTitular(Usuario usuario) {
         return equipoA.contieneJugador(usuario) || equipoB.contieneJugador(usuario);
     }
 
+    /**
+     * Verifica si un usuario se encuentra en la lista de espera.
+     *
+     * @param usuario jugador que se desea consultar
+     * @return true si está en la lista de espera; false en caso contrario
+     */
     public boolean estaEnListaEspera(Usuario usuario) {
         return listaEspera.containsKey(usuario);
     }
 
+    /**
+     * Obtiene el equipo al que pertenece un jugador titular.
+     *
+     * @param usuario jugador cuyo equipo se desea consultar
+     * @return equipo del jugador o un Optional vacío si no es titular
+     */
     public Optional<Equipo> obtenerEquipoDe(Usuario usuario) {
         if (equipoA.contieneJugador(usuario))
             return Optional.of(equipoA);
@@ -128,23 +173,49 @@ public class GestorLobbyScrim {
         return Optional.empty();
     }
 
+    /**
+     * Verifica si ambos equipos alcanzaron su capacidad máxima.
+     *
+     * @return true si ambos equipos están completos; false en caso contrario
+     */
     public boolean lobbyCompleto() {
         return equipoA.estaCompleto() && equipoB.estaCompleto();
     }
 
+    /**
+     * Obtiene el equipo A del scrim.
+     *
+     * @return equipo A
+     */
     public Equipo getEquipoA() {
         return equipoA;
     }
 
+    /**
+     * Obtiene el equipo B del scrim.
+     *
+     * @return equipo B
+     */
     public Equipo getEquipoB() {
         return equipoB;
     }
 
+    /**
+     * Obtiene los suplentes respetando su orden de ingreso FIFO.
+     *
+     * @return lista ordenada de usuarios en espera
+     */
     public List<Usuario> getListaEsperaOrdenada() {
         return List.copyOf(listaEspera.keySet());
     }
 
+    /**
+     * Obtiene el scrim asociado al lobby.
+     *
+     * @return scrim administrado
+     */
     public Scrim getScrim() {
         return scrim;
     }
 }
+

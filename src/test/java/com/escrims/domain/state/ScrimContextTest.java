@@ -12,6 +12,10 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica la gestión y delegación de estados del ciclo de vida
+ * de los scrims mediante el patrón State, incluyendo RN-09.
+ */
 class ScrimContextTest {
 
     private Scrim scrimBase;
@@ -19,6 +23,10 @@ class ScrimContextTest {
     private Usuario jugador1;
     private Usuario jugador2;
 
+    /**
+     * Inicializa los usuarios de prueba y un scrim válido
+     * de formato 1v1 antes de cada prueba.
+     */
     @BeforeEach
     void setUp() {
         organizador = new Usuario();
@@ -41,6 +49,10 @@ class ScrimContextTest {
                 .build();
     }
 
+    /**
+     * Verifica que el contexto rechace un scrim nulo y mantenga
+     * sincronizado su estado inicial con la entidad asociada.
+     */
     @Test
     @DisplayName("El contexto no permite instanciarse con Scrim nulo y sincroniza estado inicial")
     void deberiaValidarScrimNoNuloEInicializarEstado() {
@@ -53,6 +65,10 @@ class ScrimContextTest {
                 "El contexto y el Scrim deben compartir la misma referencia de estado.");
     }
 
+    /**
+     * Verifica que los cambios de estado se reflejen tanto en el contexto
+     * como en el scrim y que no se permita asignar un estado nulo.
+     */
     @Test
     @DisplayName("setState actualiza el estado en el contexto y en la entidad Scrim, y rechaza null")
     void deberiaSincronizarCambioDeEstado() {
@@ -66,6 +82,10 @@ class ScrimContextTest {
         assertSame(nuevoEstado, scrimBase.getEstado());
     }
 
+    /**
+     * Verifica que el contexto delegue las operaciones de postulación,
+     * confirmación y transición del ciclo de vida al estado activo.
+     */
     @Test
     @DisplayName("Delega correctamente todas las acciones del ciclo de vida al ScrimState activo")
     void deberiaDelegarTodasLasAccionesAlEstadoActivo() {
@@ -93,6 +113,10 @@ class ScrimContextTest {
         assertTrue(spy.cancelarLlamado);
     }
 
+    /**
+     * Verifica que el cupo del scrim se considere completo únicamente
+     * cuando todas las plazas estén cubiertas por postulaciones aceptadas.
+     */
     @Test
     @DisplayName("estaCupoCompleto detecta correctamente cuando se alcanzan los cupos con postulaciones ACEPTADAS")
     void deberiaEvaluarSiElCupoEstaCompleto() {
@@ -117,6 +141,10 @@ class ScrimContextTest {
         assertTrue(ctx.estaCupoCompleto(), "Con 2 postulaciones ACEPTADAS debe marcar cupo completo.");
     }
 
+    /**
+     * Verifica que todos los participantes deban confirmar su asistencia
+     * para completar el proceso de confirmación del scrim (RN-09).
+     */
     @Test
     @DisplayName("todosConfirmaron exige que el 100% de los participantes confirmen (RN-09)")
     void deberiaEvaluarSiTodosConfirmaron() {
@@ -141,10 +169,11 @@ class ScrimContextTest {
     }
 
     /**
-     * Implementación falsa (Spy/Stub) de ScrimState para verificar la delegación
-     * de ScrimContext sin depender aún de los 6 estados concretos.
+     * Implementación auxiliar de ScrimState mediante un Test Spy
+     * para verificar la delegación de operaciones del contexto.
      */
     private static class EstadoSpy implements ScrimState {
+
         boolean postularLlamado = false;
         boolean confirmarLlamado = false;
         boolean iniciarLlamado = false;
@@ -155,6 +184,13 @@ class ScrimContextTest {
         Usuario ultimoUsuario;
         RolJuego ultimoRol;
 
+        /**
+         * Registra la invocación de la operación de postulación.
+         *
+         * @param ctx contexto que solicita la operación
+         * @param usuario usuario que realiza la postulación
+         * @param rol rol solicitado por el usuario
+         */
         @Override
         public void postular(ScrimContext ctx, Usuario usuario, RolJuego rol) {
             this.postularLlamado = true;
@@ -163,6 +199,12 @@ class ScrimContextTest {
             this.ultimoRol = rol;
         }
 
+        /**
+         * Registra la invocación de la operación de confirmación.
+         *
+         * @param ctx contexto que solicita la operación
+         * @param usuario usuario que confirma su participación
+         */
         @Override
         public void confirmar(ScrimContext ctx, Usuario usuario) {
             this.confirmarLlamado = true;
@@ -170,24 +212,44 @@ class ScrimContextTest {
             this.ultimoUsuario = usuario;
         }
 
+        /**
+         * Registra la invocación de la operación de inicio del scrim.
+         *
+         * @param ctx contexto que solicita la operación
+         */
         @Override
         public void iniciar(ScrimContext ctx) {
             this.iniciarLlamado = true;
             this.ultimoContexto = ctx;
         }
 
+        /**
+         * Registra la invocación de la operación de finalización del scrim.
+         *
+         * @param ctx contexto que solicita la operación
+         */
         @Override
         public void finalizar(ScrimContext ctx) {
             this.finalizarLlamado = true;
             this.ultimoContexto = ctx;
         }
 
+        /**
+         * Registra la invocación de la operación de cancelación del scrim.
+         *
+         * @param ctx contexto que solicita la operación
+         */
         @Override
         public void cancelar(ScrimContext ctx) {
             this.cancelarLlamado = true;
             this.ultimoContexto = ctx;
         }
 
+        /**
+         * Devuelve el nombre identificador del estado simulado.
+         *
+         * @return nombre del estado de prueba
+         */
         @Override
         public String getNombreEstado() {
             return "SPY_STATE";

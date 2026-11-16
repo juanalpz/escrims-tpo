@@ -13,12 +13,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Entidad central del dominio: representa una partida amistosa (scrim) con toda
- * su configuración y estado operativo.
+ * Entidad central del dominio que representa un scrim, su configuración,
+ * participantes y ciclo de vida gestionado mediante el patrón State.
  */
 public class Scrim {
-
-    // ── Configuración inmutable ────────────────────────────────
 
     private final UUID id;
     private final Usuario organizador;
@@ -34,17 +32,27 @@ public class Scrim {
     private final int cupos;
     private final Map<RolJuego, Integer> reglasRoles;
 
-    // ── Estado operativo mutable ───────────────────────────────
-
     private final Set<Usuario> jugadores = new LinkedHashSet<>();
     private Set<Postulacion> postulaciones = new HashSet<>();
     private Set<Confirmacion> confirmaciones = new HashSet<>();
     private ScrimState estado;
 
-    // ── Constructores ──────────────────────────────────────────
-
     /**
-     * Constructor completo — usado por {@code ScrimBuilder}.
+     * Crea un scrim con su configuración completa, mediante el patrón Builder.
+     *
+     * @param organizador usuario organizador del scrim
+     * @param juego juego en el que se disputará la partida
+     * @param formato cantidad de jugadores por equipo
+     * @param region región del servidor de juego
+     * @param rangoMin rango competitivo mínimo permitido
+     * @param rangoMax rango competitivo máximo permitido
+     * @param latenciaMax latencia máxima permitida, si está definida
+     * @param fechaHora fecha y hora programadas para la partida
+     * @param duracion duración estimada de la partida
+     * @param modalidad modalidad de juego seleccionada
+     * @param cupos cantidad máxima de participantes
+     * @param reglasRoles distribución de cupos requeridos por rol
+     * @throws NullPointerException si el juego o el formato son nulos
      */
     public Scrim(Usuario organizador, Juego juego, Formato formato, Region region,
                  Rango rangoMin, Rango rangoMax, Integer latenciaMax,
@@ -71,7 +79,15 @@ public class Scrim {
     }
 
     /**
-     * Constructor para tests con rango mínimo y máximo explícitos.
+     * Crea un scrim de prueba con límites competitivos explícitos.
+     *
+     * @param juego juego del scrim
+     * @param formato formato de la partida
+     * @param region región del servidor
+     * @param rangoMin rango competitivo mínimo
+     * @param rangoMax rango competitivo máximo
+     * @param latenciaMax latencia máxima permitida
+     * @throws NullPointerException si el juego o el formato son nulos
      */
     public Scrim(Juego juego, Formato formato, Region region,
                  Rango rangoMin, Rango rangoMax, int latenciaMax) {
@@ -81,7 +97,14 @@ public class Scrim {
     }
 
     /**
-     * Constructor para tests con rango único (mínimo = máximo).
+     * Crea un scrim de prueba limitado a un único rango competitivo.
+     *
+     * @param juego juego del scrim
+     * @param formato formato de la partida
+     * @param region región del servidor
+     * @param rangoUnico rango competitivo permitido
+     * @param latenciaMax latencia máxima permitida
+     * @throws NullPointerException si el juego o el formato son nulos
      */
     public Scrim(Juego juego, Formato formato, Region region,
                  Rango rangoUnico, int latenciaMax) {
@@ -90,35 +113,119 @@ public class Scrim {
                 null, null, null, formato.getCuposTotales(), null);
     }
 
-    // ── Getters de configuración ───────────────────────────────
-
+    /**
+     * Obtiene el identificador único del scrim.
+     *
+     * @return identificador del scrim
+     */
     public UUID getId() { return id; }
+
+    /**
+     * Obtiene el usuario organizador del scrim.
+     *
+     * @return usuario organizador
+     */
     public Usuario getOrganizador() { return organizador; }
+
+    /**
+     * Obtiene el juego asociado al scrim.
+     *
+     * @return juego seleccionado
+     */
     public Juego getJuego() { return juego; }
+
+    /**
+     * Obtiene el formato de la partida.
+     *
+     * @return formato del scrim
+     */
     public Formato getFormato() { return formato; }
+
+    /**
+     * Obtiene la región del servidor de juego.
+     *
+     * @return región configurada
+     */
     public Region getRegion() { return region; }
+
+    /**
+     * Obtiene el rango competitivo mínimo permitido.
+     *
+     * @return rango mínimo o null si no está definido
+     */
     public Rango getRangoMin() { return rangoMin; }
+
+    /**
+     * Obtiene el rango competitivo máximo permitido.
+     *
+     * @return rango máximo o null si no está definido
+     */
     public Rango getRangoMax() { return rangoMax; }
+
+    /**
+     * Obtiene la latencia máxima configurada.
+     *
+     * @return latencia máxima o null si no está definida
+     */
     public Integer getLatenciaMax() { return latenciaMax; }
+
+    /**
+     * Obtiene la latencia máxima como valor primitivo.
+     *
+     * @return latencia máxima configurada o cero si no está definida
+     */
     public int getLatenciaMaxima() { return latenciaMax != null ? latenciaMax : 0; }
+
+    /**
+     * Obtiene la fecha y hora programadas para el scrim.
+     *
+     * @return fecha y hora de la partida
+     */
     public LocalDateTime getFechaHora() { return fechaHora; }
+
+    /**
+     * Obtiene la duración estimada de la partida.
+     *
+     * @return duración configurada
+     */
     public Integer getDuracion() { return duracion; }
+
+    /**
+     * Obtiene la modalidad de juego del scrim.
+     *
+     * @return modalidad seleccionada
+     */
     public Modalidad getModalidad() { return modalidad; }
+
+    /**
+     * Obtiene la capacidad máxima de participantes del scrim.
+     *
+     * @return cantidad total de cupos
+     */
     public int getCupos() { return cupos; }
+
+    /**
+     * Obtiene las cantidades de jugadores requeridas por rol.
+     *
+     * @return mapa no modificable de roles y cupos requeridos
+     */
     public Map<RolJuego, Integer> getReglasRoles() { return Collections.unmodifiableMap(reglasRoles); }
 
     /**
-     * Devuelve el rango cuando rangoMin == rangoMax, o null si está abierto.
+     * Obtiene el rango competitivo único cuando ambos límites coinciden.
+     *
+     * @return rango competitivo común o null si los límites son distintos
      */
     public Rango getRango() {
         return Objects.equals(rangoMin, rangoMax) ? rangoMin : null;
     }
 
-    // ── Verificación de MMR en rango (usado por estrategias) ───
-
     /**
-     * Indica si un valor de MMR está dentro del rango [rangoMin, rangoMax].
-     * Si ambos extremos son {@code null}, admite cualquier nivel (scrim abierto).
+     * Verifica si un valor de MMR pertenece al intervalo competitivo
+     * permitido, admitiendo límites abiertos cuando no están definidos.
+     *
+     * @param mmr puntuación competitiva que se desea evaluar
+     * @return true si el MMR está dentro de los límites; false en caso contrario
      */
     public boolean mmrDentroDeRango(int mmr) {
         if (rangoMin == null && rangoMax == null) {
@@ -129,15 +236,23 @@ public class Scrim {
         return mmr >= min && mmr <= max;
     }
 
-    // ── Jugadores ──────────────────────────────────────────────
-
+    /**
+     * Obtiene los jugadores incorporados al scrim.
+     *
+     * @return conjunto no modificable de jugadores
+     */
     public Set<Usuario> getJugadores() {
         return Collections.unmodifiableSet(jugadores);
     }
 
     /**
-     * Agrega un jugador al scrim. Falla si no hay cupos o si el jugador
-     * ya está inscrito (uso de {@code Set} para evitar duplicados).
+     * Incorpora un jugador al scrim si existen cupos disponibles
+     * y el usuario no se encuentra inscrito previamente.
+     *
+     * @param usuario jugador que se desea incorporar
+     * @throws NullPointerException si el usuario es nulo
+     * @throws IllegalStateException si no hay cupos disponibles
+     *         o si el jugador ya pertenece al scrim
      */
     public void agregarJugador(Usuario usuario) {
         Objects.requireNonNull(usuario, "El usuario no puede ser nulo.");
@@ -149,57 +264,105 @@ public class Scrim {
         }
     }
 
+    /**
+     * Calcula la cantidad de cupos restantes del scrim.
+     *
+     * @return diferencia entre la capacidad máxima y los jugadores inscritos
+     */
     public int cuposDisponibles() {
         return cupos - jugadores.size();
     }
 
-    // ── Roles buscados (derivados de reglasRoles) ──────────────
-
-    /** Roles que el scrim necesita cubrir. Vacío si no exige roles. */
+    /**
+     * Obtiene los roles que deben cubrirse según la configuración del scrim.
+     *
+     * @return conjunto no modificable de roles buscados
+     */
     public Set<RolJuego> getRolesBuscados() {
         return Collections.unmodifiableSet(reglasRoles.keySet());
     }
 
-    /** Agrega un rol buscado con cantidad por defecto 1 (útil en tests). */
+    /**
+     * Agrega un rol requerido con una cantidad predeterminada de un jugador,
+     * si todavía no se encuentra configurado.
+     *
+     * @param rol rol de juego que se desea incorporar
+     */
     public void buscarRol(RolJuego rol) {
         reglasRoles.putIfAbsent(rol, 1);
     }
 
-    // ── Postulaciones y Confirmaciones ─────────────────────────
-
+    /**
+     * Obtiene las postulaciones asociadas al scrim.
+     *
+     * @return conjunto no modificable de postulaciones
+     */
     public Set<Postulacion> getPostulaciones() {
         return Collections.unmodifiableSet(postulaciones);
     }
 
+    /**
+     * Establece el conjunto de postulaciones del scrim.
+     *
+     * @param postulaciones conjunto de postulaciones a asignar
+     */
     public void setPostulaciones(Set<Postulacion> postulaciones) {
         this.postulaciones = postulaciones;
     }
 
+    /**
+     * Obtiene las confirmaciones de participación del scrim.
+     *
+     * @return conjunto no modificable de confirmaciones
+     */
     public Set<Confirmacion> getConfirmaciones() {
         return Collections.unmodifiableSet(confirmaciones);
     }
 
+    /**
+     * Establece el conjunto de confirmaciones del scrim.
+     *
+     * @param confirmaciones conjunto de confirmaciones a asignar
+     */
     public void setConfirmaciones(Set<Confirmacion> confirmaciones) {
         this.confirmaciones = confirmaciones;
     }
 
-    // ── Estado del ciclo de vida (ScrimState) ──────────────────
-
+    /**
+     * Obtiene el estado actual del ciclo de vida del scrim.
+     *
+     * @return estado del scrim según el patrón State
+     */
     public ScrimState getEstado() {
         return estado;
     }
 
+    /**
+     * Establece el estado operativo del scrim mediante el patrón State.
+     *
+     * @param estado nuevo estado del ciclo de vida
+     */
     public void setEstado(ScrimState estado) {
         this.estado = estado;
     }
 
-    // ── equals / hashCode ──────────────────────────────────────
-
+    /**
+     * Compara dos scrims según su identificador único.
+     *
+     * @param o objeto con el que se realiza la comparación
+     * @return true si ambos scrims tienen el mismo identificador;
+     *         false en caso contrario
+     */
     @Override
     public boolean equals(Object o) {
         return this == o || (o instanceof Scrim s && id.equals(s.id));
     }
 
+    /**
+     * Calcula el código hash a partir del identificador único.
+     *
+     * @return código hash del scrim
+     */
     @Override
     public int hashCode() {
         return Objects.hash(id);

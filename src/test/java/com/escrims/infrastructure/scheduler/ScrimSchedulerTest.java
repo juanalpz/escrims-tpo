@@ -16,6 +16,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica las transiciones automáticas del ciclo de vida de los scrims
+ * y la publicación de eventos mediante el scheduler (CU7, CU8).
+ */
 class ScrimSchedulerTest {
 
     private List<Scrim> baseEnMemoria;
@@ -23,17 +27,32 @@ class ScrimSchedulerTest {
     private ScrimScheduler scheduler;
     private Usuario organizador;
 
+    /**
+     * Inicializa el repositorio simulado, el bus de eventos,
+     * el scheduler y el organizador antes de cada prueba.
+     */
     @BeforeEach
     void setUp() {
         baseEnMemoria = new ArrayList<>();
         eventosPublicados = new ArrayList<>();
 
         ScrimSchedulerRepository repoFake = new ScrimSchedulerRepository() {
+            /**
+             * Obtiene los scrims activos almacenados en memoria.
+             *
+             * @return lista de scrims disponibles para su evaluación
+             */
             @Override
             public List<Scrim> obtenerScrimsActivos() {
                 return List.copyOf(baseEnMemoria);
             }
 
+            /**
+             * Simula la persistencia de un scrim sin realizar operaciones
+             * adicionales, dado que las entidades permanecen en memoria.
+             *
+             * @param scrim scrim cuyo guardado se simula
+             */
             @Override
             public void guardar(Scrim scrim) {
                 // Persistencia simulada en memoria
@@ -49,6 +68,14 @@ class ScrimSchedulerTest {
         organizador.setEmailVerificado(true);
     }
 
+    /**
+     * Construye un scrim de prueba con la fecha, duración y estado indicados.
+     *
+     * @param fechaFutura fecha y hora programadas para el encuentro
+     * @param duracionMinutos duración estimada de la partida en minutos
+     * @param estado estado inicial que se asignará al scrim
+     * @return scrim configurado para evaluar transiciones automáticas
+     */
     private Scrim crearScrimBase(LocalDateTime fechaFutura, int duracionMinutos, ScrimState estado) {
         Scrim scrim = new ScrimBuilder()
                 .organizador(organizador)
@@ -63,6 +90,10 @@ class ScrimSchedulerTest {
         return scrim;
     }
 
+    /**
+     * Verifica el inicio automático de un scrim confirmado al alcanzar
+     * la hora programada y la publicación del evento correspondiente (CU7).
+     */
     @Test
     @DisplayName("CU7: Pasa automáticamente de Confirmado a EnJuego cuando llega la fecha/hora y publica evento")
     void deberiaIniciarScrimConfirmadoAlLlegarLaHora() {
@@ -81,6 +112,10 @@ class ScrimSchedulerTest {
         assertEquals("En juego", evento.nuevoEstado());
     }
 
+    /**
+     * Verifica que un scrim confirmado permanezca en su estado
+     * mientras no se alcance la fecha y hora programadas.
+     */
     @Test
     @DisplayName("No inicia un Scrim Confirmado si todavía falta tiempo para la fecha/hora pactada")
     void noDeberiaIniciarScrimConfirmadoAntesDeLaHora() {
@@ -95,6 +130,10 @@ class ScrimSchedulerTest {
         assertTrue(eventosPublicados.isEmpty());
     }
 
+    /**
+     * Verifica la finalización automática de un scrim en juego
+     * al cumplirse su duración estimada y la publicación del evento (CU8).
+     */
     @Test
     @DisplayName("CU8: Pasa automáticamente de EnJuego a Finalizado al cumplirse la duración estimada")
     void deberiaFinalizarScrimEnJuegoAlCumplirseDuracion() {
@@ -115,6 +154,10 @@ class ScrimSchedulerTest {
         assertEquals("Finalizado", evento.nuevoEstado());
     }
 
+    /**
+     * Verifica que el scheduler ignore los scrims en estados
+     * BuscandoState y CanceladoState, incluso después de la hora programada.
+     */
     @Test
     @DisplayName("Ignora Scrims que están en BuscandoState o CanceladoState aunque haya pasado la hora")
     void deberiaIgnorarScrimsNoConfirmadosONoIniciados() {

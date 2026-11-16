@@ -1,6 +1,8 @@
 package com.escrims.domain.entities;
 
-/** Formato del scrim según la cantidad de jugadores por lado. */
+/**
+ * Define el formato de un scrim según la cantidad de jugadores por equipo.
+ */
 public enum Formato {
 
     UNO_VS_UNO(1),
@@ -9,15 +11,29 @@ public enum Formato {
 
     private final int jugadoresPorLado;
 
+    /**
+     * Inicializa el formato con la cantidad de jugadores por equipo.
+     *
+     * @param jugadoresPorLado cantidad de jugadores por equipo
+     */
     Formato(int jugadoresPorLado) {
         this.jugadoresPorLado = jugadoresPorLado;
     }
 
+    /**
+     * Obtiene la cantidad de jugadores por equipo.
+     *
+     * @return cantidad de jugadores por lado
+     */
     public int getJugadoresPorLado() {
         return jugadoresPorLado;
     }
 
-    /** Cupos totales = jugadores por lado × 2. */
+    /**
+     * Calcula los cupos totales del scrim considerando ambos equipos.
+     *
+     * @return cantidad total de cupos disponibles
+     */
     public int getCuposTotales() {
         return jugadoresPorLado * 2;
     }

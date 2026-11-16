@@ -1,10 +1,7 @@
-package com.escrims.controller;
+package com.escrims.controller.exception;
 
 import com.escrims.controller.dto.CrearScrimRequest;
 import com.escrims.controller.dto.PostulacionRequest;
-import com.escrims.controller.exception.ErrorResponse;
-import com.escrims.controller.exception.GlobalExceptionHandler;
-import com.escrims.controller.exception.RecursoNoEncontradoException;
 import com.escrims.domain.entities.*;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -23,12 +20,20 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica las restricciones de validación de los DTOs y el tratamiento
+ * de excepciones HTTP mediante pruebas unitarias con JUnit 5.
+ */
 class GlobalExceptionHandlerTest {
 
     private GlobalExceptionHandler handler;
     private MockHttpServletRequest request;
     private Validator validator;
 
+    /**
+     * Inicializa el manejador de excepciones, la solicitud HTTP simulada
+     * y el validador antes de cada prueba.
+     */
     @BeforeEach
     void setUp() {
         handler = new GlobalExceptionHandler();
@@ -36,6 +41,10 @@ class GlobalExceptionHandlerTest {
         validator = Validation.buildDefaultValidatorFactory().getValidator();
     }
 
+    /**
+     * Verifica que la validación del DTO de creación detecte campos
+     * obligatorios nulos, latencia fuera de rango (RN-04) y fechas pasadas.
+     */
     @Test
     @DisplayName("DTO CrearScrimRequest: detecta latencia fuera de rango, fecha pasada y campos nulos")
     void deberiaValidarRestriccionesEnCrearScrimRequest() {
@@ -56,6 +65,10 @@ class GlobalExceptionHandlerTest {
         assertEquals(3, violaciones.size(), "Debe detectar 3 errores de validación en el DTO.");
     }
 
+    /**
+     * Verifica que una solicitud de postulación con identificador
+     * de usuario y rol válidos no genere violaciones de validación.
+     */
     @Test
     @DisplayName("DTO PostulacionRequest: pasa validación cuando usuarioId y rolDeseado son válidos")
     void deberiaAceptarPostulacionRequestValida() {
@@ -63,6 +76,10 @@ class GlobalExceptionHandlerTest {
         assertTrue(validator.validate(dtoValido).isEmpty());
     }
 
+    /**
+     * Verifica que las excepciones por argumentos inválidos se traduzcan
+     * en una respuesta HTTP 400, conservando el mensaje de error (RN-03).
+     */
     @Test
     @DisplayName("GlobalExceptionHandler: mapea IllegalArgumentException a 400 Bad Request")
     void deberiaDevolver400ParaIllegalArgumentException() {
@@ -76,6 +93,10 @@ class GlobalExceptionHandlerTest {
         assertTrue(response.getBody().mensaje().contains("RN-03"));
     }
 
+    /**
+     * Verifica que una excepción por recurso inexistente se traduzca
+     * en una respuesta HTTP 404 Not Found.
+     */
     @Test
     @DisplayName("GlobalExceptionHandler: mapea RecursoNoEncontradoException a 404 Not Found")
     void deberiaDevolver404ParaRecursoNoEncontrado() {
@@ -88,6 +109,10 @@ class GlobalExceptionHandlerTest {
         assertEquals(404, response.getBody().status());
     }
 
+    /**
+     * Verifica que las operaciones incompatibles con el estado actual
+     * de un scrim se traduzcan en una respuesta HTTP 409 Conflict.
+     */
     @Test
     @DisplayName("GlobalExceptionHandler: mapea IllegalStateException a 409 Conflict")
     void deberiaDevolver409ParaIllegalStateException() {
@@ -100,6 +125,10 @@ class GlobalExceptionHandlerTest {
         assertEquals(409, response.getBody().status());
     }
 
+    /**
+     * Verifica que las excepciones inesperadas se traduzcan
+     * en una respuesta HTTP 500 Internal Server Error.
+     */
     @Test
     @DisplayName("GlobalExceptionHandler: mapea Exception no controlada a 500 Internal Server Error")
     void deberiaDevolver500ParaErrorInesperado() {

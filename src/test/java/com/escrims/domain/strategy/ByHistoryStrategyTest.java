@@ -7,7 +7,6 @@ import com.escrims.domain.entities.RolJuego;
 import com.escrims.domain.entities.Sancion;
 import com.escrims.domain.entities.Scrim;
 import com.escrims.domain.entities.Usuario;
-import com.escrims.domain.strategy.ByHistoryStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -23,6 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Verifica los criterios de elegibilidad, puntuación y selección
+ * de jugadores de ByHistoryStrategy mediante el patrón Strategy.
+ */
 class ByHistoryStrategyTest {
 
     private static final Region LAS = Region.LAS;
@@ -31,6 +34,13 @@ class ByHistoryStrategyTest {
     private static final LocalDateTime AHORA = LocalDateTime.now(RELOJ);
     private static final double DELTA = 1e-9;
 
+    /**
+     * Crea un usuario de prueba con los roles preferidos indicados.
+     *
+     * @param nombre nombre del jugador
+     * @param roles roles preferidos del jugador
+     * @return usuario configurado para las pruebas de matchmaking
+     */
     private static Usuario jugador(String nombre, RolJuego... roles) {
         Usuario usuario = new Usuario(nombre, 1500, 40, LAS);
         for (RolJuego rol : roles) {
@@ -39,6 +49,13 @@ class ByHistoryStrategyTest {
         return usuario;
     }
 
+    /**
+     * Crea un scrim de prueba con el formato y los roles requeridos.
+     *
+     * @param formato formato de la partida
+     * @param rolesBuscados roles solicitados por el scrim
+     * @return scrim configurado para evaluar candidatos
+     */
     private static Scrim scrim(Formato formato, RolJuego... rolesBuscados) {
         Scrim scrim = new Scrim(LOL, formato, LAS, null, null, 0);
         for (RolJuego rol : rolesBuscados) {
@@ -47,6 +64,10 @@ class ByHistoryStrategyTest {
         return scrim;
     }
 
+    /**
+     * Verifica el cálculo de sinergia según la coincidencia entre
+     * los roles preferidos del jugador y los requeridos por el scrim.
+     */
     @Test
     void sinergiaSegunLosRolesQueBuscaElScrim() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.5, RELOJ);
@@ -59,6 +80,10 @@ class ByHistoryStrategyTest {
                 estrategia.calcularSinergia(scrim(Formato.CINCO_VS_CINCO), jugador("duel2", RolJuego.DUELISTA)), DELTA);
     }
 
+    /**
+     * Verifica el cálculo de Fair Play a partir de la reputación,
+     * la tasa de abandono y las sanciones acumuladas del jugador.
+     */
     @Test
     void fairPlayCombinaReputacionAbandonosYStrikes() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.5, RELOJ);
@@ -78,6 +103,10 @@ class ByHistoryStrategyTest {
         assertEquals(0.0, estrategia.calcularFairPlay(reincidente), DELTA);
     }
 
+    /**
+     * Verifica que el puntaje de matchmaking combine la sinergia
+     * y el Fair Play según la ponderación configurada.
+     */
     @Test
     void elPuntajePonderaSinergiaYFairPlaySegunElPeso() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.25, RELOJ);
@@ -88,6 +117,10 @@ class ByHistoryStrategyTest {
         assertEquals(0.25 * 0.0 + 0.75 * 0.8, estrategia.calcularPuntaje(scrim, candidato), DELTA);
     }
 
+    /**
+     * Verifica que los jugadores con sanciones vigentes sean excluidos
+     * y que aquellos con cooldown finalizado resulten elegibles.
+     */
     @Test
     void noEsElegibleConSancionEnCooldown() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.5, RELOJ);
@@ -102,6 +135,10 @@ class ByHistoryStrategyTest {
         assertTrue(estrategia.esElegible(scrim, rehabilitado));
     }
 
+    /**
+     * Verifica que se excluyan los jugadores cuya tasa de abandono
+     * supera el 50 %, permitiendo aquellos que se encuentran en el límite.
+     */
     @Test
     void noEsElegibleSiAbandonaMasDeLaMitadDeSusScrims() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.5, RELOJ);
@@ -116,6 +153,10 @@ class ByHistoryStrategyTest {
         assertTrue(estrategia.esElegible(scrim, enElLimite));
     }
 
+    /**
+     * Verifica que se rechacen los candidatos cuyo puntaje
+     * ponderado no alcanza el mínimo de elegibilidad.
+     */
     @Test
     void noEsElegibleSiElPuntajeNoLlegaAlMinimo() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.5, RELOJ);
@@ -127,6 +168,10 @@ class ByHistoryStrategyTest {
         assertFalse(estrategia.esElegible(scrim, toxico));
     }
 
+    /**
+     * Verifica que la estrategia seleccione candidatos en orden
+     * descendente de puntuación y respete los cupos disponibles.
+     */
     @Test
     void seleccionaPorPuntajeDescendente() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.5, RELOJ);
@@ -142,6 +187,10 @@ class ByHistoryStrategyTest {
         assertEquals(List.of(ejemplar, bueno), new ArrayList<>(seleccionados));
     }
 
+    /**
+     * Verifica que la cobertura de roles requeridos tenga prioridad
+     * sobre la puntuación individual de los candidatos.
+     */
     @Test
     void cubrePrimeroLosRolesBuscadosAunqueOtroTengaMejorPuntaje() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.5, RELOJ);
@@ -156,6 +205,10 @@ class ByHistoryStrategyTest {
         assertEquals(Set.of(support1, tanque), seleccionados);
     }
 
+    /**
+     * Verifica que la selección excluya jugadores no elegibles
+     * o ya incorporados y respete los cupos restantes del scrim.
+     */
     @Test
     void excluyeNoElegiblesYRespetaLosCupos() {
         ByHistoryStrategy estrategia = new ByHistoryStrategy(0.5, RELOJ);
@@ -173,6 +226,10 @@ class ByHistoryStrategyTest {
         assertEquals(List.of(limpio), new ArrayList<>(seleccionados));
     }
 
+    /**
+     * Verifica que la estrategia rechace ponderaciones
+     * fuera del intervalo permitido de 0 a 1.
+     */
     @Test
     void rechazaPesoFueraDeRango() {
         assertThrows(IllegalArgumentException.class, () -> new ByHistoryStrategy(1.5));
