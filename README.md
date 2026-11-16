@@ -4,7 +4,7 @@ Sistema integral de gestión, emparejamiento (matchmaking) y ciclo de vida de pa
 
 ---
 
-## 🏛️ Arquitectura y Estructura de Capas
+## Arquitectura y Estructura de Capas
 
 El proyecto sigue una separación estricta de capas desacopladas conforme a la **Clean Architecture** (las dependencias apuntan exclusivamente hacia adentro):
 
@@ -40,7 +40,7 @@ com.escrims/
 
 ---
 
-## 🧩 Patrones de Diseño GoF Implementados
+## Patrones de Diseño GoF Implementados
 
 | Patrón | Tipo | Componentes Principales | Propósito |
 |---|---|---|---|
@@ -56,7 +56,7 @@ com.escrims/
 
 ---
 
-## 🚀 Compilación y Pruebas
+## Compilación y Pruebas
 
 Requisitos: **JDK 17+** y **Maven 3.8+**.
 
