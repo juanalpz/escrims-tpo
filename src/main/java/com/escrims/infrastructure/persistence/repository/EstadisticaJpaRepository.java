@@ -1,0 +1,10 @@
+package com.escrims.infrastructure.persistence.repository;
+
+import com.escrims.infrastructure.persistence.entity.EstadisticaJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+import java.util.UUID;
+
+public interface EstadisticaJpaRepository extends JpaRepository<EstadisticaJpaEntity, UUID> {
+    List<EstadisticaJpaEntity> findByScrimId(UUID scrimId);
+}

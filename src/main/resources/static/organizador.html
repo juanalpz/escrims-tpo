@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>eScrims Web — Panel Organizador</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="top-switcher">
+      <div class="brand">
+        e<span>Scrims</span>
+        <small style="color: #94a3b8; font-weight: 400"
+          >| Panel de Control del Organizador</small
+        >
+      </div>
+      <div class="nav-links">
+        <a href="index.html">📱 App Móvil (Jugador)</a>
+        <a href="organizador.html" class="active">🖥️ Panel Web (Organizador)</a>
+      </div>
+    </nav>
+
+    <main class="dashboard-container">
+      <!-- Columna Izquierda: Crear Scrim (Builder + Validaciones DTO) -->
+      <section class="panel-box">
+        <h2>➕ Crear Nuevo Scrim (ScrimBuilder)</h2>
+        <form
+          id="formCrearScrim"
+          onsubmit="crearScrim(event)"
+          style="display: flex; flex-direction: column; gap: 0.75rem"
+        >
+          <div class="form-row">
+            <div class="form-group">
+              <label>Juego</label>
+              <select id="juego">
+                <option value="VALORANT">VALORANT</option>
+                <option value="LEAGUE_OF_LEGENDS">LEAGUE_OF_LEGENDS</option>
+                <option value="CS2">CS2</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Formato</label>
+              <select id="formato">
+                <option value="CINCO_VS_CINCO">5v5 (10 cupos)</option>
+                <option value="TRES_VS_TRES">3v3 (6 cupos)</option>
+                <option value="UNO_VS_UNO">1v1 (2 cupos)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Región</label>
+              <select id="region">
+                <option value="LAS">LAS</option>
+                <option value="LAN">LAN</option>
+                <option value="BR">BR</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Latencia Máx (1-500 ms)</label>
+              <input
+                type="number"
+                id="latenciaMax"
+                value="75"
+                min="1"
+                max="500"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Rango Mínimo</label>
+              <select id="rangoMin">
+                <option value="ORO">ORO</option>
+                <option value="PLATINO">PLATINO</option>
+                <option value="DIAMANTE">DIAMANTE</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Rango Máximo</label>
+              <select id="rangoMax">
+                <option value="PLATINO">PLATINO</option>
+                <option value="DIAMANTE" selected>DIAMANTE</option>
+                <option value="INMORTAL">INMORTAL</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Fecha y Hora del Encuentro</label>
+            <input type="datetime-local" id="fechaHora" required />
+          </div>
+
+          <button type="submit" class="btn-primary">
+            Publicar Scrim (Estado: Buscando)
+          </button>
+        </form>
+      </section>
+
+      <!-- Columna Derecha: Gestión de Lobby, Equipos, Suplentes y Command Pattern -->
+      <section class="panel-box">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+          "
+        >
+          <h2 id="tituloLobby" style="border: none; padding: 0">
+            Lobby Activo: VALORANT 5v5 · LAS
+          </h2>
+          <span id="badgeEstadoLobby" class="badge badge-lobby"
+            >Lobby armado</span
+          >
+        </div>
+
+        <div id="toastOrg" class="toast"></div>
+
+        <!-- Barra de Comandos Pre-Partida (Patrón Command + Undo) -->
+        <div class="command-toolbar">
+          <strong style="font-size: 0.82rem; color: #94a3b8"
+            >Acciones Pre-Partida (Command):</strong
+          >
+          <button class="btn-outline" onclick="ejecutarSwap()">
+            ⇄ Swap J1 ↔ J2
+          </button>
+          <button class="btn-outline" onclick="ejecutarAsignarRol()">
+            🎯 Cambiar Rol J1
+          </button>
+          <button class="btn-warning" onclick="deshacerUltimoComando()">
+            ↩ Undo (<span id="contadorUndo">0</span>)
+          </button>
+          <button class="btn-success" onclick="iniciarPartida()">
+            ▶ Iniciar Scrim (CU7)
+          </button>
+        </div>
+
+        <!-- Equipos A y B -->
+        <div class="teams-grid">
+          <div class="team-column">
+            <h3>🛡️ EQUIPO A (Titulares)</h3>
+            <div id="listaEquipoA"></div>
+          </div>
+          <div class="team-column">
+            <h3>⚔️ EQUIPO B (Titulares)</h3>
+            <div id="listaEquipoB"></div>
+          </div>
+        </div>
+
+        <!-- Lista de Espera / Suplentes FIFO (RN-10 / RN-17) -->
+        <div class="team-column" style="border-color: #334155">
+          <h3 style="color: #f59e0b">
+            ⏳ Lista de Espera / Suplentes FIFO (RN-17)
+          </h3>
+          <div id="listaSuplentes"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      let estadoActual = 'Lobby armado';
+      let equipoA = [
+        { nombre: 'ViperLAS', rol: 'DUELIST' },
+        { nombre: 'Kuro_gg', rol: 'CONTROLLER' },
+        { nombre: 'TomiSova', rol: 'INITIATOR' },
+      ];
+      let equipoB = [
+        { nombre: 'NikoValorant', rol: 'DUELIST' },
+        { nombre: 'SantiSmoke', rol: 'SENTINEL' },
+        { nombre: 'MatiFlex', rol: 'INITIATOR' },
+      ];
+      let suplentes = [
+        { nombre: 'Suplente_01 (1° FIFO)', rol: 'SENTINEL' },
+        { nombre: 'Suplente_02 (2° FIFO)', rol: 'CONTROLLER' },
+      ];
+
+      const historialComandos = [];
+
+      function notificarOrg(msg, esError = false) {
+        const toast = document.getElementById('toastOrg');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        toast.style.borderColor = esError ? '#ef4444' : '#10b981';
+        toast.style.color = esError ? '#ef4444' : '#10b981';
+        toast.style.background = esError
+          ? 'rgba(239,68,68,0.15)'
+          : 'rgba(16,185,129,0.15)';
+        setTimeout(() => (toast.style.display = 'none'), 3500);
+      }
+
+      function validarPrePartida() {
+        if (estadoActual === 'En juego') {
+          notificarOrg(
+            'RN-12: No se pueden ejecutar ni deshacer comandos una vez iniciada la partida.',
+            true,
+          );
+          return false;
+        }
+        return true;
+      }
+
+      function ejecutarSwap() {
+        if (!validarPrePartida()) return;
+        const temp = equipoA[0];
+        equipoA[0] = equipoB[0];
+        equipoB[0] = temp;
+
+        historialComandos.push({ tipo: 'SWAP' });
+        notificarOrg(
+          `SwapJugadoresCommand ejecutado: ${equipoB[0].nombre} ↔ ${equipoA[0].nombre}`,
+        );
+        renderLobby();
+      }
+
+      function ejecutarAsignarRol() {
+        if (!validarPrePartida()) return;
+        const rolAnterior = equipoA[0].rol;
+        const nuevoRol = rolAnterior === 'DUELIST' ? 'SENTINEL' : 'DUELIST';
+        equipoA[0].rol = nuevoRol;
+
+        historialComandos.push({ tipo: 'ROL', rolAnterior });
+        notificarOrg(
+          `AsignarRolCommand: ${equipoA[0].nombre} pasó de ${rolAnterior} a ${nuevoRol}`,
+        );
+        renderLobby();
+      }
+
+      function deshacerUltimoComando() {
+        if (!validarPrePartida()) return;
+        if (historialComandos.length === 0) {
+          notificarOrg('No hay comandos en el historial para deshacer.', true);
+          return;
+        }
+        const ultimo = historialComandos.pop();
+        if (ultimo.tipo === 'SWAP') {
+          const temp = equipoA[0];
+          equipoA[0] = equipoB[0];
+          equipoB[0] = temp;
+          notificarOrg(
+            'Undo ejecutado: Se revirtió el intercambio de jugadores.',
+          );
+        } else if (ultimo.tipo === 'ROL') {
+          equipoA[0].rol = ultimo.rolAnterior;
+          notificarOrg(
+            `Undo ejecutado: Rol restaurado a ${ultimo.rolAnterior}.`,
+          );
+        }
+        renderLobby();
+      }
+
+      function bajarTitularYPromover(indice) {
+        if (!validarPrePartida()) return;
+        const saliente = equipoA[indice];
+        if (suplentes.length > 0) {
+          const promovido = suplentes.shift();
+          equipoA[indice] = promovido;
+          notificarOrg(
+            `RN-17: ${saliente.nombre} se bajó. Se promovió automáticamente a ${promovido.nombre}.`,
+          );
+        } else {
+          equipoA.splice(indice, 1);
+          notificarOrg(`${saliente.nombre} se bajó del equipo.`);
+        }
+        renderLobby();
+      }
+
+      function iniciarPartida() {
+        estadoActual = 'En juego';
+        const badge = document.getElementById('badgeEstadoLobby');
+        badge.textContent = 'En juego';
+        badge.className = 'badge badge-enjuego';
+        notificarOrg(
+          'CU7: Transición a EnJuegoState completada. Comandos pre-partida bloqueados (RN-12).',
+        );
+      }
+
+      function crearScrim(e) {
+        e.preventDefault();
+        const juego = document.getElementById('juego').value;
+        const formato = document.getElementById('formato').value;
+        const region = document.getElementById('region').value;
+        const lat = document.getElementById('latenciaMax').value;
+
+        document.getElementById('tituloLobby').textContent =
+          `Lobby Activo: ${juego} (${formato}) · ${region} · ≤${lat}ms`;
+        estadoActual = 'Buscando jugadores';
+        const badge = document.getElementById('badgeEstadoLobby');
+        badge.textContent = estadoActual;
+        badge.className = 'badge badge-buscando';
+        notificarOrg(
+          'Scrim creado mediante ScrimBuilder y publicado en DomainEventBus.',
+        );
+      }
+
+      function renderLobby() {
+        document.getElementById('contadorUndo').textContent =
+          historialComandos.length;
+
+        document.getElementById('listaEquipoA').innerHTML = equipoA
+          .map(
+            (j, idx) => `
+            <div class="player-row">
+                <span><strong>${j.nombre}</strong> <small style="color:#38bdf8;">[${j.rol}]</small></span>
+                <button class="btn-danger" style="padding:0.2rem 0.5rem;font-size:0.75rem;" onclick="bajarTitularYPromover(${idx})">Bajar</button>
+            </div>
+        `,
+          )
+          .join('');
+
+        document.getElementById('listaEquipoB').innerHTML = equipoB
+          .map(
+            (j) => `
+            <div class="player-row">
+                <span><strong>${j.nombre}</strong> <small style="color:#10b981;">[${j.rol}]</small></span>
+                <span style="font-size:0.75rem;color:#94a3b8;">Titular</span>
+            </div>
+        `,
+          )
+          .join('');
+
+        document.getElementById('listaSuplentes').innerHTML = suplentes.length
+          ? suplentes
+              .map(
+                (s) => `
+                <div class="player-row">
+                    <span>${s.nombre}</span>
+                    <small style="color:#f59e0b;">[${s.rol}]</small>
+                </div>
+            `,
+              )
+              .join('')
+          : `<div style="font-size:0.82rem;color:#94a3b8;">No hay suplentes en espera.</div>`;
+      }
+
+      renderLobby();
+    </script>
+  </body>
+</html>
