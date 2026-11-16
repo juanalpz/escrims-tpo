@@ -1,32 +1,23 @@
 package com.escrims.infrastructure.notification;
 
-import com.escrims.domain.notification.Canal;
-import com.escrims.domain.notification.NotifierFactory;
+import com.escrims.domain.entities.Canal;
 
 /**
- * «Concrete Factory» Entorno de desarrollo: todos los canales son
- * {@link LogNotifier}, así que nunca se contacta a un proveedor real.
- * Devuelve siempre la misma instancia por canal para poder inspeccionar lo
- * enviado
+ * Implementa una ConcreteFactory del patrón Abstract Factory para crear
+ * notificadores de desarrollo mediante {@link LogNotifier}.
  */
 public class DevNotifierFactory implements NotifierFactory {
 
-    private final LogNotifier push = new LogNotifier(Canal.PUSH);
-    private final LogNotifier email = new LogNotifier(Canal.EMAIL);
-    private final LogNotifier chat = new LogNotifier(Canal.CHAT);
-
+    /**
+     * Crea un notificador basado en logs, independientemente
+     * del canal solicitado.
+     *
+     * @param canal canal de notificación solicitado
+     * @return instancia de LogNotifier para registrar las notificaciones
+     */
     @Override
-    public LogNotifier createPush() {
-        return push;
-    }
-
-    @Override
-    public LogNotifier createEmail() {
-        return email;
-    }
-
-    @Override
-    public LogNotifier createChat() {
-        return chat;
+    public Notifier crearNotifier(Canal canal) {
+        // En desarrollo, todos los canales utilizan un notificador basado en logs.
+        return new LogNotifier();
     }
 }

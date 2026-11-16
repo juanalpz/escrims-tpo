@@ -1,46 +1,28 @@
 package com.escrims.infrastructure.notification;
 
-import com.escrims.domain.notification.Notifier;
-import com.escrims.domain.notification.NotifierFactory;
-import com.escrims.infrastructure.adapter.DiscordAdapter;
-import com.escrims.infrastructure.adapter.FirebasePushAdapter;
-import com.escrims.infrastructure.adapter.SendGridAdapter;
-import com.escrims.infrastructure.http.HttpTransport;
-import com.escrims.infrastructure.http.JavaHttpTransport;
-
-import java.util.Objects;
+import com.escrims.domain.entities.Canal;
 
 /**
- * «Concrete Factory» Entorno de produccion: cada canal se resuelve con el
- * adaptador del proveedor real (Firebase, SendGrid, Discord).
+ * Implementa una ConcreteFactory del patrón Abstract Factory para crear
+ * notificadores de producción mediante adaptadores de servicios externos.
  */
 public class ProdNotifierFactory implements NotifierFactory {
 
-    private final ProdNotifierConfig config;
-    private final HttpTransport transport;
-
-    public ProdNotifierFactory(ProdNotifierConfig config) {
-        this(config, new JavaHttpTransport());
-    }
-
-    /** Permite inyectar el transporte HTTP (útil para tests). */
-    public ProdNotifierFactory(ProdNotifierConfig config, HttpTransport transport) {
-        this.config = Objects.requireNonNull(config, "config");
-        this.transport = Objects.requireNonNull(transport, "transport");
-    }
-
+    /**
+     * Crea un notificador según el canal solicitado, utilizando
+     * los adaptadores de Firebase, SendGrid, Discord o iCalendar.
+     *
+     * @param canal canal de notificación para el que se solicita un notificador
+     * @return instancia de Notifier correspondiente al canal seleccionado
+     * @throws NullPointerException si el canal es nulo
+     */
     @Override
-    public Notifier createPush() {
-        return new FirebasePushAdapter(transport, config.firebaseProjectId(), config.firebaseAccessToken());
-    }
-
-    @Override
-    public Notifier createEmail() {
-        return new SendGridAdapter(transport, config.sendGridApiKey(), config.emailRemitente());
-    }
-
-    @Override
-    public Notifier createChat() {
-        return new DiscordAdapter(transport, config.discordWebhookUrl());
+    public Notifier crearNotifier(Canal canal) {
+        return switch (canal) {
+            case PUSH    -> new FirebaseAdapter(new FirebaseClient());
+            case EMAIL   -> new SendGridAdapter(new SendGridClient());
+            case DISCORD -> new DiscordAdapter(new DiscordClient());
+            case ICAL    -> new ICalAdapter(new ICalClient());
+        };
     }
 }

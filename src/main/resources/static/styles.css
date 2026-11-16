@@ -1,0 +1,337 @@
+:root {
+  --bg-dark: #0b0f19;
+  --bg-card: #131a2a;
+  --bg-elevated: #1c253b;
+  --border: #2a3652;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --accent-primary: #38bdf8;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+  --accent-purple: #8b5cf6;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+/* Barra superior de navegación entre vistas */
+.top-switcher {
+  background: #070a12;
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 0.5px;
+  color: var(--accent-primary);
+}
+
+.brand span {
+  color: var(--text-main);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: 0.2s;
+}
+
+.nav-links a.active,
+.nav-links a:hover {
+  color: var(--text-main);
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+}
+
+/* Badges de Estado (Patrón State) */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-buscando {
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+}
+.badge-lobby {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
+  border: 1px solid var(--accent-warning);
+}
+.badge-confirmado {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-success);
+  border: 1px solid var(--accent-success);
+}
+.badge-enjuego {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent-purple);
+  border: 1px solid var(--accent-purple);
+}
+
+/* Botones e Inputs */
+button,
+select,
+input {
+  font-size: 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.85rem;
+  background: var(--bg-elevated);
+  color: var(--text-main);
+}
+
+button {
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.15s;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+.btn-primary {
+  background: var(--accent-primary);
+  color: #06121e;
+  border: none;
+}
+.btn-success {
+  background: var(--accent-success);
+  color: #051b11;
+  border: none;
+}
+.btn-warning {
+  background: var(--accent-warning);
+  color: #1c1102;
+  border: none;
+}
+.btn-danger {
+  background: var(--accent-danger);
+  color: #fff;
+  border: none;
+}
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-main);
+}
+
+/* ================= VISTA MÓVIL (JUGADOR) ================= */
+.mobile-wrapper {
+  max-width: 460px;
+  margin: 1.5rem auto;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.mobile-header {
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #131c31, #0f172a);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mobile-content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.filters-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.scrim-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.scrim-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scrim-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.scrim-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.scrim-actions select {
+  flex: 1;
+}
+
+.mobile-bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem;
+  background: #0a0e17;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.mobile-bottom-nav span.active {
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+/* ================= PANEL WEB (ORGANIZADOR) ================= */
+.dashboard-container {
+  max-width: 1200px;
+  margin: 1.5rem auto;
+  padding: 0 1.25rem;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .dashboard-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.panel-box h2 {
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.form-group label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.teams-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.team-column {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem;
+}
+
+.team-column h3 {
+  font-size: 0.92rem;
+  margin-bottom: 0.6rem;
+  color: var(--accent-primary);
+}
+
+.player-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.6rem;
+  background: var(--bg-card);
+  border-radius: 6px;
+  margin-bottom: 0.45rem;
+  font-size: 0.85rem;
+}
+
+.command-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #0d1322;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  align-items: center;
+}
+
+.toast {
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid var(--accent-success);
+  color: var(--accent-success);
+  font-size: 0.85rem;
+  display: none;
+}

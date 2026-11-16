@@ -10,6 +10,10 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica las transiciones válidas y las restricciones del ciclo de vida
+ * de los scrims mediante el patrón State (RN-01, RN-03, RN-08, RN-09).
+ */
 class ScrimStateTransitionsTest {
 
     private Usuario organizador;
@@ -18,6 +22,10 @@ class ScrimStateTransitionsTest {
     private Scrim scrim1v1;
     private ScrimContext ctx;
 
+    /**
+     * Inicializa los usuarios de prueba, un scrim de formato 1v1
+     * y su contexto de estados antes de cada prueba.
+     */
     @BeforeEach
     void setUp() {
         organizador = new Usuario();
@@ -42,6 +50,10 @@ class ScrimStateTransitionsTest {
         ctx = new ScrimContext(scrim1v1);
     }
 
+    /**
+     * Verifica el recorrido completo del ciclo de vida, desde la búsqueda
+     * de jugadores hasta la finalización del encuentro (RN-08, RN-09).
+     */
     @Test
     @DisplayName("Flujo completo feliz: Buscando -> LobbyArmado -> Confirmado -> EnJuego -> Finalizado")
     void deberiaRecorrerTodoElCicloDeVidaExitosamente() {
@@ -75,6 +87,10 @@ class ScrimStateTransitionsTest {
         assertInstanceOf(FinalizadoState.class, ctx.getState());
     }
 
+    /**
+     * Verifica que el estado BuscandoState rechace acciones prematuras,
+     * postulaciones duplicadas y usuarios sin correo verificado (RN-01).
+     */
     @Test
     @DisplayName("BuscandoState: Rechaza duplicados, no verificados, fuera de rango y acciones prematuras")
     void deberiaValidarReglasEnBuscandoState() {
@@ -93,6 +109,10 @@ class ScrimStateTransitionsTest {
         assertThrows(IllegalStateException.class, () -> ctx.postular(jugador1, RolJuego.DUELIST));
     }
 
+    /**
+     * Verifica que BuscandoState rechace postulaciones de jugadores
+     * cuyo rango se encuentra fuera de los límites permitidos (RN-03).
+     */
     @Test
     @DisplayName("RN-03: BuscandoState rechaza jugador cuyo rango está fuera de [rangoMin, rangoMax]")
     void deberiaRechazarJugadorFueraDeRango() {
@@ -115,6 +135,10 @@ class ScrimStateTransitionsTest {
         assertTrue(ex.getMessage().contains("fuera del límite"));
     }
 
+    /**
+     * Verifica que LobbyArmadoState impida nuevas postulaciones,
+     * confirmaciones de usuarios ajenos e inicios prematuros.
+     */
     @Test
     @DisplayName("LobbyArmadoState: Rechaza nuevas postulaciones, usuarios ajenos al lobby e inicio prematuro")
     void deberiaValidarReglasEnLobbyArmadoState() {
@@ -133,6 +157,10 @@ class ScrimStateTransitionsTest {
         assertThrows(IllegalStateException.class, () -> ctx.iniciar());
     }
 
+    /**
+     * Verifica que EnJuegoState impida cancelar el encuentro
+     * y realizar nuevas postulaciones o confirmaciones.
+     */
     @Test
     @DisplayName("EnJuegoState: Bloquea cancelaciones y nuevas postulaciones/confirmaciones")
     void deberiaBloquearCancelacionCuandoEstaEnJuego() {
@@ -148,6 +176,10 @@ class ScrimStateTransitionsTest {
         assertThrows(IllegalStateException.class, () -> ctx.confirmar(jugador1));
     }
 
+    /**
+     * Verifica que la cancelación desde BuscandoState lleve al scrim
+     * a un estado terminal que impide nuevas operaciones.
+     */
     @Test
     @DisplayName("Cancelación permitida en Buscando, LobbyArmado y Confirmado; luego bloquea todo")
     void deberiaPermitirCancelarAntesDeEnJuegoYBloquearAccionesPosteriores() {
@@ -162,6 +194,10 @@ class ScrimStateTransitionsTest {
         assertThrows(IllegalStateException.class, () -> ctx.cancelar());
     }
 
+    /**
+     * Verifica que FinalizadoState sea un estado terminal
+     * y rechace cualquier operación posterior sobre el scrim.
+     */
     @Test
     @DisplayName("FinalizadoState: Es estado terminal y rechaza cualquier transición posterior")
     void deberiaBloquearAccionesEnFinalizadoState() {

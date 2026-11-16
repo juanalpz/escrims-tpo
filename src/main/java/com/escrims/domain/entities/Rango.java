@@ -1,9 +1,8 @@
 package com.escrims.domain.entities;
 
 /**
- * Rangos competitivos de eSports, cada uno con un intervalo de MMR asociado.
- * El ordinal define el orden natural (Hierro < Bronce < ... < Radiante),
- * lo que permite comparar rangos con {@code ordinal()}.
+ * Define los rangos competitivos de eSports y sus intervalos de MMR,
+ * ordenados jerárquicamente desde Hierro hasta Radiante.
  */
 public enum Rango {
 
@@ -18,25 +17,53 @@ public enum Rango {
     private final int mmrMin;
     private final int mmrMax;
 
+    /**
+     * Inicializa el rango competitivo con sus límites de MMR.
+     *
+     * @param mmrMin valor mínimo de MMR del rango
+     * @param mmrMax valor máximo de MMR del rango
+     */
     Rango(int mmrMin, int mmrMax) {
         this.mmrMin = mmrMin;
         this.mmrMax = mmrMax;
     }
 
+    /**
+     * Obtiene el límite inferior de MMR del rango.
+     *
+     * @return valor mínimo de MMR
+     */
     public int getMmrMin() {
         return mmrMin;
     }
 
+    /**
+     * Obtiene el límite superior de MMR del rango.
+     *
+     * @return valor máximo de MMR
+     */
     public int getMmrMax() {
         return mmrMax;
     }
 
-    /** Indica si un valor de MMR cae dentro de este rango. */
+    /**
+     * Verifica si un valor de MMR pertenece al intervalo del rango,
+     * incluyendo sus límites.
+     *
+     * @param mmr puntuación competitiva que se desea evaluar
+     * @return true si el MMR pertenece al rango; false en caso contrario
+     */
     public boolean contiene(int mmr) {
         return mmr >= mmrMin && mmr <= mmrMax;
     }
 
-    /** Devuelve el {@code Rango} al que corresponde un MMR dado. */
+    /**
+     * Determina el rango competitivo correspondiente a un valor de MMR.
+     *
+     * @param mmr puntuación competitiva que se desea clasificar
+     * @return rango competitivo asociado al MMR
+     * @throws IllegalArgumentException si el MMR no pertenece a ningún rango definido
+     */
     public static Rango desdeMMR(int mmr) {
         for (Rango r : values()) {
             if (r.contiene(mmr)) {

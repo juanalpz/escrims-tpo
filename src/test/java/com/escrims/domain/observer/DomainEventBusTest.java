@@ -10,15 +10,27 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica la publicación de eventos de dominio y la gestión
+ * de suscriptores mediante el patrón Observer.
+ */
 class DomainEventBusTest {
 
     private DomainEventBus eventBus;
 
+    /**
+     * Inicializa un bus de eventos de dominio vacío
+     * antes de ejecutar cada prueba.
+     */
     @BeforeEach
     void setUp() {
         eventBus = new DomainEventBus();
     }
 
+    /**
+     * Verifica que la publicación de un evento notifique
+     * a todos los suscriptores registrados en el bus.
+     */
     @Test
     @DisplayName("Notifica a todos los suscriptores registrados cuando se publica un evento")
     void deberiaNotificarATodosLosSuscriptores() {
@@ -40,6 +52,10 @@ class DomainEventBusTest {
         assertEquals(evento, recibidosSub1.get(0));
     }
 
+    /**
+     * Verifica que el bus evite suscripciones duplicadas
+     * y deje de notificar a los suscriptores dados de baja.
+     */
     @Test
     @DisplayName("Evita suscripciones duplicadas y deja de notificar tras unsubscribe")
     void deberiaEvitarDuplicadosYPermitirDesuscribir() {
@@ -58,6 +74,10 @@ class DomainEventBusTest {
         assertEquals(1, recibidos.size(), "No debe recibir eventos luego de desuscribirse.");
     }
 
+    /**
+     * Verifica que el bus rechace suscriptores y eventos nulos
+     * mediante excepciones por argumentos inválidos.
+     */
     @Test
     @DisplayName("Valida parámetros nulos al suscribir o publicar")
     void deberiaRechazarNulos() {

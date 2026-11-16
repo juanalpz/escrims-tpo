@@ -4,28 +4,68 @@ import com.escrims.domain.entities.RolJuego;
 import com.escrims.domain.entities.Usuario;
 
 /**
- * Interfaz del Patrón State que define el contrato de acciones permitidas
- * en cada fase del ciclo de vida de un Scrim.
+ * Define el contrato State del patrón State para gestionar las operaciones
+ * permitidas en cada fase del ciclo de vida de un scrim (RN-08 a RN-12).
  */
 public interface ScrimState {
 
-    // Permite postular un usuario con un rol deseado (válido en BuscandoState)
+    /**
+     * Procesa la postulación de un jugador según el estado actual del scrim.
+     *
+     * @param ctx contexto que administra el estado del scrim
+     * @param usuario jugador que solicita incorporarse
+     * @param rol rol de juego solicitado
+     * @throws IllegalArgumentException si los datos de postulación son inválidos
+     * @throws IllegalStateException si el estado actual no permite postularse
+     *         o se incumplen los requisitos de participación
+     */
     void postular(ScrimContext ctx, Usuario usuario, RolJuego rol);
 
-    // Registra la confirmación de un jugador seleccionado (válido en
-    // LobbyArmadoState)
+    /**
+     * Procesa la confirmación de participación de un jugador
+     * seleccionado para el lobby (RN-09).
+     *
+     * @param ctx contexto que administra el estado del scrim
+     * @param usuario jugador que desea confirmar su participación
+     * @throws IllegalArgumentException si el usuario es nulo
+     *         durante la confirmación en LobbyArmadoState
+     * @throws IllegalStateException si el estado actual no permite confirmar
+     *         o el jugador no cumple las condiciones necesarias
+     */
     void confirmar(ScrimContext ctx, Usuario usuario);
 
-    // Inicia la partida al llegar la fecha/hora (válido en ConfirmdoState vía
-    // Scheduler)
+    /**
+     * Inicia la partida cuando el estado actual permite realizar
+     * la transición a EnJuegoState.
+     *
+     * @param ctx contexto que administra el estado del scrim
+     * @throws IllegalStateException si el estado actual no permite
+     *         iniciar la partida
+     */
     void iniciar(ScrimContext ctx);
 
-    // Finaliza la partida y habilita carga de estadísticas (válido en EnJuegoState)
+    /**
+     * Finaliza la partida cuando se encuentra en estado EnJuegoState.
+     *
+     * @param ctx contexto que administra el estado del scrim
+     * @throws IllegalStateException si el estado actual no permite
+     *         finalizar la partida
+     */
     void finalizar(ScrimContext ctx);
 
-    // Cancela el encuentro (válido sólo antes de EnJuegoState)
+    /**
+     * Cancela el scrim antes del inicio de la partida (RN-12).
+     *
+     * @param ctx contexto que administra el estado del scrim
+     * @throws IllegalStateException si el estado actual no permite
+     *         cancelar la partida
+     */
     void cancelar(ScrimContext ctx);
 
-    // Devuelve el nombre legible del estado (útil para eventos de dominio y logs)
+    /**
+     * Obtiene el nombre descriptivo del estado actual del scrim.
+     *
+     * @return nombre legible del estado
+     */
     String getNombreEstado();
 }

@@ -11,6 +11,10 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Verifica la ejecución y reversión de operaciones sobre los equipos
+ * de un scrim mediante el patrón Command, incluyendo RN-12.
+ */
 class ScrimCommandTest {
 
     private Scrim scrim;
@@ -18,6 +22,10 @@ class ScrimCommandTest {
     private ScrimCommandInvoker invoker;
     private Usuario j1, j2, j3;
 
+    /**
+     * Inicializa un scrim válido, los jugadores de prueba, el gestor
+     * del lobby y el ejecutor de comandos antes de cada prueba.
+     */
     @BeforeEach
     void setUp() {
         Usuario org = new Usuario();
@@ -43,6 +51,10 @@ class ScrimCommandTest {
         invoker = new ScrimCommandInvoker();
     }
 
+    /**
+     * Verifica que AsignarRolCommand modifique el rol de un jugador
+     * y que la operación de deshacer restaure su rol original.
+     */
     @Test
     @DisplayName("AsignarRolCommand cambia el rol y undo() restaura el rol original")
     void deberiaAsignarYDeshacerRol() {
@@ -56,6 +68,10 @@ class ScrimCommandTest {
         assertEquals(RolJuego.DUELIST, gestor.getEquipoA().getRolDe(j1));
     }
 
+    /**
+     * Verifica que InvitarJugadorCommand incorpore un jugador al equipo
+     * indicado y que la operación de deshacer elimine su incorporación.
+     */
     @Test
     @DisplayName("InvitarJugadorCommand agrega al equipo indicado y undo() lo remueve")
     void deberiaInvitarYDeshacerInvitacion() {
@@ -68,6 +84,10 @@ class ScrimCommandTest {
         assertFalse(gestor.getEquipoB().contieneJugador(j3));
     }
 
+    /**
+     * Verifica que SwapJugadoresCommand intercambie jugadores entre
+     * ambos equipos y que la operación de deshacer restaure su ubicación.
+     */
     @Test
     @DisplayName("SwapJugadoresCommand intercambia bandos entre Equipo A y B y undo() los devuelve")
     void deberiaIntercambiarYDeshacerSwap() {
@@ -85,6 +105,10 @@ class ScrimCommandTest {
         assertTrue(gestor.getEquipoB().contieneJugador(j2));
     }
 
+    /**
+     * Verifica que se rechace la ejecución de comandos cuando el scrim
+     * se encuentra en estado EnJuego, conforme a RN-12.
+     */
     @Test
     @DisplayName("RN-12: Bloquea ejecución o undo de comandos si el Scrim ya está EnJuego")
     void deberiaBloquearComandosCuandoEstaEnJuego() {

@@ -1,10 +1,11 @@
 package com.escrims.domain.entities;
 
 /**
- * Roles que un jugador puede desempeñar dentro de un equipo.
- * Incluye roles específicos de cada juego soportado y alias de compatibilidad.
+ * Define los roles que un jugador puede desempeñar dentro de un equipo,
+ * incluyendo roles específicos de cada juego y alias de compatibilidad.
  */
 public enum RolJuego {
+
     // Valorant
     DUELISTA,
     DUELIST,

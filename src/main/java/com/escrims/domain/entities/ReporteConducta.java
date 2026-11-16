@@ -5,8 +5,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Representa una denuncia de conducta (abandono, toxicidad, no-show) sobre un usuario en un Scrim.
- * Es procesada por la cadena de responsabilidad de moderación (Auto -> Bot -> Humano).
+ * Representa una denuncia de conducta de un jugador durante un scrim,
+ * gestionada mediante el patrón Chain of Responsibility de moderación.
  */
 public class ReporteConducta {
 
@@ -19,6 +19,16 @@ public class ReporteConducta {
     private Sancion sancion;
     private final LocalDateTime fechaCreacion;
 
+    /**
+     * Crea un reporte de conducta con estado inicial pendiente.
+     *
+     * @param scrim scrim en el que ocurrió la conducta reportada
+     * @param reportante usuario que realiza la denuncia
+     * @param reportado usuario sobre el que se realiza la denuncia
+     * @param motivo descripción de la conducta reportada
+     * @throws IllegalArgumentException si el scrim, el reportante o el reportado
+     *         son nulos, si ambos usuarios son iguales o si el motivo está vacío
+     */
     public ReporteConducta(Scrim scrim, Usuario reportante, Usuario reportado, String motivo) {
         if (scrim == null || reportante == null || reportado == null) {
             throw new IllegalArgumentException("El scrim, el reportante y el reportado son obligatorios.");
@@ -39,7 +49,9 @@ public class ReporteConducta {
     }
 
     /**
-     * Marca el reporte como en revisión (usado al escalar al moderador humano).
+     * Escala un reporte pendiente a revisión por un moderador humano.
+     *
+     * @throws IllegalStateException si el reporte no está en estado pendiente
      */
     public void escalarARevision() {
         if (this.estado != EstadoReporte.PENDIENTE) {
@@ -49,7 +61,11 @@ public class ReporteConducta {
     }
 
     /**
-     * Resuelve el reporte asociando una sanción aplicada (strike/cooldown).
+     * Resuelve el reporte y registra la sanción aplicada al usuario reportado.
+     *
+     * @param sancion sanción que se aplica al usuario reportado
+     * @throws IllegalArgumentException si la sanción es nula
+     * @throws IllegalStateException si el reporte ya fue resuelto o rechazado
      */
     public void resolverConSancion(Sancion sancion) {
         if (sancion == null) {
@@ -64,7 +80,9 @@ public class ReporteConducta {
     }
 
     /**
-     * Desestima el reporte sin aplicar sanción.
+     * Desestima un reporte sin aplicar sanciones al usuario reportado.
+     *
+     * @throws IllegalStateException si el reporte ya fue resuelto o rechazado
      */
     public void rechazar() {
         if (this.estado == EstadoReporte.RESUELTO || this.estado == EstadoReporte.RECHAZADO) {
@@ -73,15 +91,69 @@ public class ReporteConducta {
         this.estado = EstadoReporte.RECHAZADO;
     }
 
+    /**
+     * Obtiene el identificador único del reporte.
+     *
+     * @return identificador del reporte
+     */
     public UUID getId() { return id; }
+
+    /**
+     * Obtiene el scrim asociado al reporte.
+     *
+     * @return scrim en el que ocurrió la conducta reportada
+     */
     public Scrim getScrim() { return scrim; }
+
+    /**
+     * Obtiene el usuario que realizó la denuncia.
+     *
+     * @return usuario reportante
+     */
     public Usuario getReportante() { return reportante; }
+
+    /**
+     * Obtiene el usuario denunciado.
+     *
+     * @return usuario reportado
+     */
     public Usuario getReportado() { return reportado; }
+
+    /**
+     * Obtiene el motivo de la denuncia.
+     *
+     * @return descripción de la conducta reportada
+     */
     public String getMotivo() { return motivo; }
+
+    /**
+     * Obtiene el estado actual del reporte.
+     *
+     * @return estado de moderación del reporte
+     */
     public EstadoReporte getEstado() { return estado; }
+
+    /**
+     * Obtiene la sanción asociada al reporte.
+     *
+     * @return sanción aplicada o null si no se asignó ninguna
+     */
     public Sancion getSancion() { return sancion; }
+
+    /**
+     * Obtiene la fecha y hora de creación del reporte.
+     *
+     * @return fecha y hora de registro de la denuncia
+     */
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
 
+    /**
+     * Compara dos reportes según su identificador único.
+     *
+     * @param o objeto con el que se realiza la comparación
+     * @return true si ambos reportes tienen el mismo identificador;
+     *         false en caso contrario
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -89,6 +161,11 @@ public class ReporteConducta {
         return Objects.equals(id, that.id);
     }
 
+    /**
+     * Calcula el código hash a partir del identificador único.
+     *
+     * @return código hash del reporte
+     */
     @Override
     public int hashCode() {
         return Objects.hash(id);

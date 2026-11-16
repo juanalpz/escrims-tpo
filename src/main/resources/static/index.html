@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>eScrims Mobile — Vista Jugador</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="top-switcher">
+      <div class="brand">
+        e<span>Scrims</span>
+        <small style="color: #94a3b8; font-weight: 400">| Demo UI</small>
+      </div>
+      <div class="nav-links">
+        <a href="index.html" class="active">📱 App Móvil (Jugador)</a>
+        <a href="organizador.html">🖥️ Panel Web (Organizador)</a>
+      </div>
+    </nav>
+
+    <main class="mobile-wrapper">
+      <header class="mobile-header">
+        <div>
+          <div style="font-weight: 700">Hola, ViperLAS 👋</div>
+          <div style="font-size: 0.78rem; color: #10b981">
+            ● Email Verificado · Platino II · LAS
+          </div>
+        </div>
+        <span class="badge badge-confirmado">0 Strikes</span>
+      </header>
+
+      <section class="mobile-content">
+        <div class="filters-bar">
+          <select id="filtroJuego" onchange="renderScrims()">
+            <option value="TODOS">Todos los juegos</option>
+            <option value="VALORANT">Valorant</option>
+            <option value="LEAGUE_OF_LEGENDS">League of Legends</option>
+            <option value="CS2">Counter-Strike 2</option>
+          </select>
+          <select id="filtroRegion" onchange="renderScrims()">
+            <option value="TODAS">Todas las regiones</option>
+            <option value="LAS">LAS</option>
+            <option value="LAN">LAN</option>
+            <option value="BR">BR</option>
+          </select>
+        </div>
+
+        <div id="toastMobile" class="toast"></div>
+        <div
+          id="listaScrims"
+          style="display: flex; flex-direction: column; gap: 0.85rem"
+        ></div>
+      </section>
+
+      <footer class="mobile-bottom-nav">
+        <span class="active">🔍 Explorar</span>
+        <span>⚔️ Mis Scrims</span>
+        <span>📅 iCal Sync</span>
+        <span>👤 Perfil</span>
+      </footer>
+    </main>
+
+    <script>
+      const scrimsMock = [
+        {
+          id: 'scrim-101',
+          juego: 'VALORANT',
+          formato: '5v5',
+          region: 'LAS',
+          rango: 'Oro - Diamante',
+          latenciaMax: 70,
+          hora: 'Hoy 21:00',
+          cupos: '9/10',
+          estado: 'Buscando jugadores',
+          badgeClass: 'badge-buscando',
+          postulado: false,
+          confirmado: false,
+        },
+        {
+          id: 'scrim-102',
+          juego: 'LEAGUE_OF_LEGENDS',
+          formato: '5v5',
+          region: 'LAS',
+          rango: 'Platino - Esmeralda',
+          latenciaMax: 60,
+          hora: 'Hoy 22:30',
+          cupos: '10/10',
+          estado: 'Lobby armado',
+          badgeClass: 'badge-lobby',
+          postulado: true,
+          confirmado: false,
+        },
+        {
+          id: 'scrim-103',
+          juego: 'CS2',
+          formato: '5v5',
+          region: 'BR',
+          rango: 'Nivel 6 - 8',
+          latenciaMax: 90,
+          hora: 'Mañana 20:00',
+          cupos: '6/10',
+          estado: 'Buscando jugadores',
+          badgeClass: 'badge-buscando',
+          postulado: false,
+          confirmado: false,
+        },
+      ];
+
+      function mostrarAviso(texto) {
+        const toast = document.getElementById('toastMobile');
+        toast.textContent = texto;
+        toast.style.display = 'block';
+        setTimeout(() => (toast.style.display = 'none'), 3200);
+      }
+
+      function postularse(id) {
+        const rol = document.getElementById(`rol-${id}`).value;
+        const scrim = scrimsMock.find((s) => s.id === id);
+        // Equivalente a POST /api/scrims/{id}/postulaciones
+        scrim.postulado = true;
+        scrim.cupos = '10/10';
+        scrim.estado = 'Lobby armado';
+        scrim.badgeClass = 'badge-lobby';
+        mostrarAviso(
+          `Postulación enviada como ${rol}. ¡Cupo completo -> Lobby armado!`,
+        );
+        renderScrims();
+      }
+
+      function confirmarAsistencia(id) {
+        const scrim = scrimsMock.find((s) => s.id === id);
+        // Equivalente a POST /api/scrims/{id}/confirmaciones
+        scrim.confirmado = true;
+        scrim.estado = 'Confirmado';
+        scrim.badgeClass = 'badge-confirmado';
+        mostrarAviso(
+          'Asistencia confirmada (100%). Evento sincronizado en calendario iCal.',
+        );
+        renderScrims();
+      }
+
+      function renderScrims() {
+        const juego = document.getElementById('filtroJuego').value;
+        const region = document.getElementById('filtroRegion').value;
+        const contenedor = document.getElementById('listaScrims');
+
+        const filtrados = scrimsMock.filter(
+          (s) =>
+            (juego === 'TODOS' || s.juego === juego) &&
+            (region === 'TODAS' || s.region === region),
+        );
+
+        contenedor.innerHTML = filtrados
+          .map(
+            (s) => `
+            <article class="scrim-card">
+                <div class="scrim-card-header">
+                    <strong>${s.juego} · ${s.formato}</strong>
+                    <span class="badge ${s.badgeClass}">${s.estado}</span>
+                </div>
+                <div class="scrim-meta">
+                    <span>🌎 ${s.region}</span>
+                    <span>🏆 ${s.rango}</span>
+                    <span>📶 ≤ ${s.latenciaMax} ms</span>
+                    <span>🕒 ${s.hora}</span>
+                    <span>👥 ${s.cupos}</span>
+                </div>
+                <div class="scrim-actions">
+                    ${
+                      !s.postulado
+                        ? `
+                        <select id="rol-${s.id}">
+                            <option value="DUELIST">Duelist / Carry</option>
+                            <option value="CONTROLLER">Controller / Jungla</option>
+                            <option value="INITIATOR">Initiator / Mid</option>
+                            <option value="SENTINEL">Sentinel / Support</option>
+                        </select>
+                        <button class="btn-primary" onclick="postularse('${s.id}')">Postularme</button>
+                    `
+                        : !s.confirmado
+                          ? `
+                        <button class="btn-warning" style="width:100%;" onclick="confirmarAsistencia('${s.id}')">
+                            Confirmar Asistencia (RN-09)
+                        </button>
+                    `
+                          : `
+                        <button class="btn-outline" style="width:100%;" disabled>✔ Confirmado para jugar</button>
+                    `
+                    }
+                </div>
+            </article>
+        `,
+          )
+          .join('');
+      }
+
+      renderScrims();
+    </script>
+  </body>
+</html>

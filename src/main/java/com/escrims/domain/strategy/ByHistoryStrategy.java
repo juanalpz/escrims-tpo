@@ -15,38 +15,53 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * «ConcreteStrategy» Empareja por historial/compatibilidad.
- *
- * <p>Calcula un puntaje entre 0 y 1 por candidato:
- * {@code pesoCompatibilidad × sinergia + (1 − pesoCompatibilidad) × fairPlay}.
- *
- * <ul>
- *   <li><b>Sinergia de roles</b>: 1 si el candidato juega alguno de los roles que
- *       el scrim busca (o si el scrim no exige roles), 0.5 si no declaró roles,
- *       0 si ninguno de sus roles sirve.</li>
- *   <li><b>Fair play</b>: promedio entre la reputación (rating de feedback) y la
- *       constancia (1 − tasa de abandono), menos una penalidad por cada strike.</li>
- * </ul>
- *
- * <p>Quedan afuera los candidatos con una sanción en cooldown, con una tasa de
- * abandono mayor a {@link #TASA_ABANDONO_MAXIMA} o con puntaje menor a
- * {@link #PUNTAJE_MINIMO}.
+ * Implementa una ConcreteStrategy del patrón Strategy que selecciona jugadores
+ * según su compatibilidad de roles, historial de participación y fair play.
  */
 public class ByHistoryStrategy implements MatchmakingStrategy {
 
+    /** Tasa máxima de abandono permitida para participar en el matchmaking. */
     public static final double TASA_ABANDONO_MAXIMA = 0.5;
+
+    /** Puntaje mínimo requerido para considerar elegible a un candidato. */
     public static final double PUNTAJE_MINIMO = 0.4;
+
+    /** Penalización aplicada al puntaje de fair play por cada strike acumulado. */
     public static final double PENALIDAD_POR_STRIKE = 0.15;
+
+    /** Peso predeterminado de la compatibilidad de roles en el puntaje final. */
+    public static final double PESO_COMPATIBILIDAD_DEFAULT = 0.5;
+
     private static final double SINERGIA_SIN_ROLES_DECLARADOS = 0.5;
 
     private final double pesoCompatibilidad;
     private final Clock reloj;
 
-    /** @param pesoCompatibilidad peso de la sinergia de roles, entre 0 y 1 */
+    /**
+     * Inicializa la estrategia con pesos equilibrados entre compatibilidad
+     * de roles y fair play, utilizando el reloj del sistema.
+     */
+    public ByHistoryStrategy() {
+        this(PESO_COMPATIBILIDAD_DEFAULT, Clock.systemDefaultZone());
+    }
+
+    /**
+     * Inicializa la estrategia con un peso de compatibilidad personalizado.
+     *
+     * @param pesoCompatibilidad peso de la compatibilidad de roles entre 0 y 1
+     * @throws IllegalArgumentException si el peso está fuera del rango permitido
+     */
     public ByHistoryStrategy(double pesoCompatibilidad) {
         this(pesoCompatibilidad, Clock.systemDefaultZone());
     }
 
+    /**
+     * Inicializa la estrategia con un peso de compatibilidad y un reloj específicos.
+     *
+     * @param pesoCompatibilidad peso de la compatibilidad de roles entre 0 y 1
+     * @param reloj reloj utilizado para evaluar la vigencia de las sanciones
+     * @throws IllegalArgumentException si el peso está fuera del rango permitido
+     */
     public ByHistoryStrategy(double pesoCompatibilidad, Clock reloj) {
         if (pesoCompatibilidad < 0 || pesoCompatibilidad > 1) {
             throw new IllegalArgumentException("El peso de compatibilidad debe estar entre 0 y 1");
@@ -55,10 +70,24 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
         this.reloj = reloj;
     }
 
+    /**
+     * Obtiene el peso asignado a la compatibilidad de roles.
+     *
+     * @return peso de compatibilidad configurado
+     */
     public double getPesoCompatibilidad() {
         return pesoCompatibilidad;
     }
 
+    /**
+     * Verifica la elegibilidad de un candidato según sus sanciones,
+     * tasa de abandono y puntaje de compatibilidad.
+     *
+     * @param scrim scrim para el que se evalúa al candidato
+     * @param candidato jugador cuya elegibilidad se desea verificar
+     * @return true si cumple todos los criterios de selección;
+     *         false en caso contrario
+     */
     @Override
     public boolean esElegible(Scrim scrim, Usuario candidato) {
         if (candidato.tieneSancionActiva(LocalDateTime.now(reloj))) {
@@ -71,8 +100,13 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
     }
 
     /**
-     * Primero cubre cada rol buscado con el mejor candidato que lo juega y
-     * después completa los cupos restantes por puntaje.
+     * Selecciona jugadores elegibles priorizando la cobertura de roles
+     * requeridos y completando los cupos restantes según su puntaje.
+     *
+     * @param scrim scrim para el que se realiza la selección
+     * @param candidatos conjunto de jugadores disponibles para evaluar
+     * @return conjunto ordenado de jugadores seleccionados, sin superar
+     *         los cupos disponibles
      */
     @Override
     public Set<Usuario> seleccionarCandidatos(Scrim scrim, Set<Usuario> candidatos) {
@@ -88,6 +122,7 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
                         .thenComparing(Usuario::getUsername))
                 .toList());
 
+        // Se prioriza cubrir los roles requeridos antes de completar los cupos por puntaje.
         for (RolJuego rol : scrim.getRolesBuscados()) {
             if (seleccionados.size() == cupos) {
                 break;
@@ -107,12 +142,28 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
         return seleccionados;
     }
 
-    /** Puntaje de compatibilidad del candidato con el scrim, entre 0 y 1. */
+    /**
+     * Calcula el puntaje ponderado de compatibilidad de un candidato,
+     * combinando la sinergia de roles y el fair play.
+     *
+     * @param scrim scrim con el que se evalúa la compatibilidad
+     * @param candidato jugador cuyo puntaje se desea calcular
+     * @return puntaje ponderado de compatibilidad y fair play
+     */
     public double calcularPuntaje(Scrim scrim, Usuario candidato) {
         return pesoCompatibilidad * calcularSinergia(scrim, candidato)
                 + (1 - pesoCompatibilidad) * calcularFairPlay(candidato);
     }
 
+    /**
+     * Calcula la sinergia entre los roles preferidos del candidato
+     * y los roles requeridos por el scrim.
+     *
+     * @param scrim scrim cuyos roles requeridos se desean evaluar
+     * @param candidato jugador cuya compatibilidad se desea calcular
+     * @return 1 si existe compatibilidad o no se exigen roles,
+     *         0.5 si el candidato no declaró preferencias, o 0 en caso contrario
+     */
     public double calcularSinergia(Scrim scrim, Usuario candidato) {
         Set<RolJuego> buscados = scrim.getRolesBuscados();
         if (buscados.isEmpty()) {
@@ -125,6 +176,13 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
         return Collections.disjoint(buscados, preferidos) ? 0.0 : 1.0;
     }
 
+    /**
+     * Calcula el puntaje de fair play a partir de la reputación,
+     * la tasa de abandono y las penalizaciones por strikes.
+     *
+     * @param candidato jugador cuyo comportamiento se desea evaluar
+     * @return puntaje de fair play limitado al intervalo entre 0 y 1
+     */
     public double calcularFairPlay(Usuario candidato) {
         double reputacion = candidato.getRatingFairPlay() / Usuario.RATING_MAXIMO;
         double constancia = 1 - candidato.getTasaAbandono();
