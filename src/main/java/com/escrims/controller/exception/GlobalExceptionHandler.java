@@ -1,5 +1,8 @@
 package com.escrims.controller.exception;
 
+import com.escrims.service.exception.AccesoDenegadoException;
+import com.escrims.service.exception.NoAutenticadoException;
+import com.escrims.service.exception.NoEncontradoException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +11,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -93,6 +98,78 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    /**
+     * Captura búsquedas de entidades inexistentes hechas por los servicios y rutas sin recurso (HTTP 404).
+     *
+     * @param ex      excepción con la descripción del recurso no encontrado.
+     * @param request petición HTTP entrante donde ocurrió el error.
+     * @return respuesta HTTP 404 con el detalle del recurso faltante.
+     */
+    @ExceptionHandler({NoEncontradoException.class, NoResourceFoundException.class})
+    public ResponseEntity<ErrorResponse> handleNoEncontrado(Exception ex, HttpServletRequest request) {
+        String mensaje = ex instanceof NoEncontradoException ? ex.getMessage() : "La ruta solicitada no existe.";
+        ErrorResponse body = ErrorResponse.of(
+                HttpStatus.NOT_FOUND.value(),
+                "Recurso no encontrado",
+                mensaje,
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    /**
+     * Captura peticiones sin credenciales válidas (HTTP 401).
+     *
+     * @param ex      excepción con el motivo del rechazo.
+     * @param request petición HTTP entrante donde ocurrió el error.
+     * @return respuesta HTTP 401.
+     */
+    @ExceptionHandler(NoAutenticadoException.class)
+    public ResponseEntity<ErrorResponse> handleNoAutenticado(
+            NoAutenticadoException ex, HttpServletRequest request) {
+        ErrorResponse body = ErrorResponse.of(
+                HttpStatus.UNAUTHORIZED.value(),
+                "No autenticado",
+                ex.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    /**
+     * Captura operaciones que el usuario autenticado no tiene permitido realizar (HTTP 403).
+     *
+     * @param ex      excepción con el motivo del rechazo.
+     * @param request petición HTTP entrante donde ocurrió el error.
+     * @return respuesta HTTP 403.
+     */
+    @ExceptionHandler(AccesoDenegadoException.class)
+    public ResponseEntity<ErrorResponse> handleAccesoDenegado(
+            AccesoDenegadoException ex, HttpServletRequest request) {
+        ErrorResponse body = ErrorResponse.of(
+                HttpStatus.FORBIDDEN.value(),
+                "Acceso denegado",
+                ex.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
+    /**
+     * Captura parámetros de ruta o de consulta con un tipo inválido, como un UUID mal formado (HTTP 400).
+     *
+     * @param ex      excepción con el nombre del parámetro inválido.
+     * @param request petición HTTP entrante donde ocurrió el error.
+     * @return respuesta HTTP 400.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        ErrorResponse body = ErrorResponse.of(
+                HttpStatus.BAD_REQUEST.value(),
+                "Parámetro o regla de entrada inválida",
+                "El valor del parámetro '" + ex.getName() + "' no es válido.",
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     /**

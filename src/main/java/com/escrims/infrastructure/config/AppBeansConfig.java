@@ -1,17 +1,13 @@
 package com.escrims.infrastructure.config;
 
-import com.escrims.domain.entities.Scrim;
+import com.escrims.domain.moderation.PoliticaSanciones;
 import com.escrims.domain.observer.DomainEventBus;
-import com.escrims.infrastructure.scheduler.ScrimSchedulerRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 /**
- * Configura los beans de infraestructura de Spring, incluyendo el bus
- * de eventos de dominio y el repositorio de scrims para el scheduler.
+ * Configura los beans de dominio que no llevan anotaciones de Spring:
+ * el bus de eventos y la política de sanciones.
  */
 @Configuration
 public class AppBeansConfig {
@@ -27,37 +23,12 @@ public class AppBeansConfig {
     }
 
     /**
-     * Registra una implementación en memoria del repositorio utilizado
-     * por el scheduler para administrar los scrims activos.
+     * Registra la política de strikes y cooldowns del sistema de penalidades.
      *
-     * @return repositorio de scrims activos para el scheduler
+     * @return política de sanciones compartida por la moderación y las penalizaciones
      */
     @Bean
-    public ScrimSchedulerRepository scrimSchedulerRepository() {
-        List<Scrim> activos = new CopyOnWriteArrayList<>();
-        return new ScrimSchedulerRepository() {
-
-            /**
-             * Obtiene una copia de los scrims activos registrados.
-             *
-             * @return lista no modificable de scrims activos
-             */
-            @Override
-            public List<Scrim> obtenerScrimsActivos() {
-                return List.copyOf(activos);
-            }
-
-            /**
-             * Registra un scrim si todavía no se encuentra en el repositorio.
-             *
-             * @param scrim scrim que se desea registrar
-             */
-            @Override
-            public void guardar(Scrim scrim) {
-                if (!activos.contains(scrim)) {
-                    activos.add(scrim);
-                }
-            }
-        };
+    public PoliticaSanciones politicaSanciones() {
+        return new PoliticaSanciones();
     }
 }

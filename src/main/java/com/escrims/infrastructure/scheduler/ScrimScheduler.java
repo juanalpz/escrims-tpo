@@ -5,9 +5,12 @@ import com.escrims.domain.observer.DomainEventBus;
 import com.escrims.domain.observer.ScrimStateChanged;
 import com.escrims.domain.state.ConfirmadoState;
 import com.escrims.domain.state.EnJuegoState;
+import com.escrims.domain.state.LobbyArmadoState;
 import com.escrims.domain.state.ScrimContext;
+import com.escrims.service.moderation.PenalizacionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +29,7 @@ public class ScrimScheduler {
 
     private final ScrimSchedulerRepository repository;
     private final DomainEventBus eventBus;
+    private final PenalizacionService penalizaciones;
 
     /**
      * Inicializa el scheduler con el repositorio de scrims activos
@@ -36,11 +40,28 @@ public class ScrimScheduler {
      * @throws IllegalArgumentException si el repositorio o el bus de eventos son nulos
      */
     public ScrimScheduler(ScrimSchedulerRepository repository, DomainEventBus eventBus) {
+        this(repository, eventBus, null);
+    }
+
+    /**
+     * Inicializa el scheduler con el sistema de penalidades, lo que habilita
+     * la cancelación automática de lobbies sin confirmar con registro de no-show.
+     *
+     * @param repository repositorio utilizado para consultar y guardar scrims
+     * @param eventBus bus encargado de publicar los cambios de estado
+     * @param penalizaciones servicio de penalidades, o null para deshabilitar
+     *                       el control automático de no-shows
+     * @throws IllegalArgumentException si el repositorio o el bus de eventos son nulos
+     */
+    @Autowired
+    public ScrimScheduler(ScrimSchedulerRepository repository, DomainEventBus eventBus,
+                          PenalizacionService penalizaciones) {
         if (repository == null || eventBus == null) {
             throw new IllegalArgumentException("El repositorio y el eventBus son obligatorios.");
         }
         this.repository = repository;
         this.eventBus = eventBus;
+        this.penalizaciones = penalizaciones;
     }
 
     /**
@@ -85,6 +106,22 @@ public class ScrimScheduler {
         }
 
         ScrimContext ctx = new ScrimContext(scrim);
+
+        // No-show: si llega la hora y el lobby no reunió el 100% de confirmaciones,
+        // se sanciona a quienes no confirmaron y el scrim se cancela.
+        if (penalizaciones != null && ctx.getState() instanceof LobbyArmadoState
+                && !ahora.isBefore(scrim.getFechaHora())) {
+            String estadoAnterior = ctx.getState().getNombreEstado();
+            int ausentes = penalizaciones.registrarNoShowsSinConfirmar(scrim, ahora).size();
+            ctx.cancelar();
+            repository.guardar(scrim);
+
+            String nuevoEstado = ctx.getState().getNombreEstado();
+            eventBus.publish(new ScrimStateChanged(scrim.getId(), estadoAnterior, nuevoEstado));
+            log.info("Scrim {} cancelado por falta de confirmaciones ({} no-show registrados).",
+                    scrim.getId(), ausentes);
+            return;
+        }
 
         // CU7: iniciar automáticamente el scrim confirmado al alcanzar la fecha programada.
         if (ctx.getState() instanceof ConfirmadoState && !ahora.isBefore(scrim.getFechaHora())) {

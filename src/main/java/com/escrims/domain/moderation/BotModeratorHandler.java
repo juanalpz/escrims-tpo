@@ -3,40 +3,60 @@ package com.escrims.domain.moderation;
 import com.escrims.domain.entities.ReporteConducta;
 import com.escrims.domain.entities.ResultadoModeracion;
 import com.escrims.domain.entities.Sancion;
+import com.escrims.domain.entities.TipoInfraccion;
 
 import java.time.LocalDateTime;
 
 /**
- * Implementa un ConcreteHandler del patrón Chain of Responsibility
- * que resuelve reportes de usuarios con 1 o 2 strikes previos,
- * aplicando una sanción automática por reincidencia leve.
+ * Segundo eslabón del patrón Chain of Responsibility: sanciona de forma
+ * automática a los jugadores con menos de
+ * {@link PoliticaSanciones#STRIKES_REVISION_HUMANA} strikes, aplicando un
+ * strike con el cooldown escalonado de {@link PoliticaSanciones}.
  */
 public class BotModeratorHandler extends ReportHandler {
 
-    private static final int UMBRAL_STRIKES_BOT = 3;
-    private static final int HORAS_COOLDOWN = 24;
+    private final PoliticaSanciones politica;
 
     /**
-     * Evalúa el historial de strikes del usuario reportado y aplica
-     * una sanción automática cuando corresponde.
+     * Crea el manejador con la política de sanciones predeterminada.
+     */
+    public BotModeratorHandler() {
+        this(new PoliticaSanciones());
+    }
+
+    /**
+     * Crea el manejador con una política de sanciones específica.
+     *
+     * @param politica política que define strikes y cooldowns
+     * @throws IllegalArgumentException si la política es nula
+     */
+    public BotModeratorHandler(PoliticaSanciones politica) {
+        if (politica == null) {
+            throw new IllegalArgumentException("La política de sanciones es obligatoria.");
+        }
+        this.politica = politica;
+    }
+
+    /**
+     * Sanciona automáticamente al reportado si todavía no alcanzó el umbral
+     * de reincidencia que exige revisión humana.
      *
      * @param reporte reporte de conducta que se desea evaluar
-     * @return resultado con sanción si el usuario tiene entre 1 y 2 strikes;
+     * @return resultado con sanción si el caso es de reincidencia leve;
      *         resultado sin resolver en caso contrario
      * @throws IllegalStateException si el reporte ya fue resuelto o rechazado
-     *         y se intenta aplicar una sanción
      */
     @Override
     protected ResultadoModeracion intentarResolver(ReporteConducta reporte) {
         int strikes = reporte.getReportado().getStrikes();
-
-        // Regla de moderación: entre 1 y 2 strikes se aplica un cooldown de 24 horas.
-        if (strikes > 0 && strikes < UMBRAL_STRIKES_BOT) {
-            Sancion sancion = new Sancion(1, LocalDateTime.now().plusHours(HORAS_COOLDOWN));
-            reporte.resolverConSancion(sancion);
-            return ResultadoModeracion.resueltoConSancion(
-                    "Bot-moderador: sanción automática por reincidencia leve.", sancion);
+        if (strikes >= PoliticaSanciones.STRIKES_REVISION_HUMANA) {
+            return ResultadoModeracion.sinResolver();
         }
-        return ResultadoModeracion.sinResolver();
+
+        Sancion sancion = politica.crearSancion(reporte.getReportado(), TipoInfraccion.CONDUCTA,
+                reporte.getMotivo(), LocalDateTime.now());
+        reporte.resolverConSancion(sancion);
+        return ResultadoModeracion.resueltoConSancion(
+                "Bot-moderador: strike automático por reincidencia leve.", sancion);
     }
 }
